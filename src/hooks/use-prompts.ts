@@ -12,18 +12,11 @@ import {
   incrementUsageCount as incrementUsageFn,
   importPrompts as importPromptsFn,
 } from '@/lib/firebase/firestore';
-import {
-  getDemoPrompts,
-  createDemoPrompt,
-  updateDemoPrompt,
-  deleteDemoPrompt,
-  initializeDemoData,
-} from '@/lib/demo/demo-store';
 import type { PromptFormData, Prompt } from '@/types';
 import { toast } from 'sonner';
 
 export function usePrompts() {
-  const { user, isDemoMode } = useAuthStore();
+  const { user } = useAuthStore();
   const {
     prompts,
     isLoading,
@@ -37,29 +30,20 @@ export function usePrompts() {
     setSortOptions,
   } = usePromptStore();
 
-  // Subscribe to prompts (or load demo data)
+  // Subscribe to prompts
   useEffect(() => {
     if (!user?.uid) {
       setPrompts([]);
       return;
     }
 
-    // Demo mode - load from localStorage
-    if (isDemoMode) {
-      initializeDemoData();
-      setPrompts(getDemoPrompts());
-      setLoading(false);
-      return;
-    }
-
-    // Firebase mode
     setLoading(true);
     const unsubscribe = subscribeToPrompts(user.uid, (newPrompts) => {
       setPrompts(newPrompts);
     });
 
     return () => unsubscribe();
-  }, [user?.uid, isDemoMode, setPrompts, setLoading]);
+  }, [user?.uid, setPrompts, setLoading]);
 
   // Create prompt
   const createPrompt = useCallback(
@@ -67,13 +51,7 @@ export function usePrompts() {
       if (!user?.uid) throw new Error('User not authenticated');
 
       try {
-        let id: string;
-        if (isDemoMode) {
-          id = createDemoPrompt({ ...data, tags: data.tags || [], isFavorite: data.isFavorite || false });
-          setPrompts(getDemoPrompts());
-        } else {
-          id = await createPromptFn(user.uid, data);
-        }
+        const id = await createPromptFn(user.uid, data);
         toast.success('Prompt created successfully');
         return id;
       } catch (error) {
@@ -81,7 +59,7 @@ export function usePrompts() {
         throw error;
       }
     },
-    [user?.uid, isDemoMode, setPrompts]
+    [user?.uid]
   );
 
   // Update prompt
@@ -90,19 +68,14 @@ export function usePrompts() {
       if (!user?.uid) throw new Error('User not authenticated');
 
       try {
-        if (isDemoMode) {
-          updateDemoPrompt(promptId, data);
-          setPrompts(getDemoPrompts());
-        } else {
-          await updatePromptFn(user.uid, promptId, data);
-        }
+        await updatePromptFn(user.uid, promptId, data);
         toast.success('Prompt updated successfully');
       } catch (error) {
         toast.error('Failed to update prompt');
         throw error;
       }
     },
-    [user?.uid, isDemoMode, setPrompts]
+    [user?.uid]
   );
 
   // Delete prompt
@@ -111,19 +84,14 @@ export function usePrompts() {
       if (!user?.uid) throw new Error('User not authenticated');
 
       try {
-        if (isDemoMode) {
-          deleteDemoPrompt(promptId);
-          setPrompts(getDemoPrompts());
-        } else {
-          await deletePromptFn(user.uid, promptId);
-        }
+        await deletePromptFn(user.uid, promptId);
         toast.success('Prompt deleted successfully');
       } catch (error) {
         toast.error('Failed to delete prompt');
         throw error;
       }
     },
-    [user?.uid, isDemoMode, setPrompts]
+    [user?.uid]
   );
 
   // Toggle favorite
@@ -132,19 +100,14 @@ export function usePrompts() {
       if (!user?.uid) throw new Error('User not authenticated');
 
       try {
-        if (isDemoMode) {
-          updateDemoPrompt(promptId, { isFavorite });
-          setPrompts(getDemoPrompts());
-        } else {
-          await toggleFavoriteFn(user.uid, promptId, isFavorite);
-        }
+        await toggleFavoriteFn(user.uid, promptId, isFavorite);
         toast.success(isFavorite ? 'Added to favorites' : 'Removed from favorites');
       } catch (error) {
         toast.error('Failed to update favorite status');
         throw error;
       }
     },
-    [user?.uid, isDemoMode, setPrompts]
+    [user?.uid]
   );
 
   // Copy prompt and increment usage count
@@ -154,22 +117,14 @@ export function usePrompts() {
 
       try {
         await navigator.clipboard.writeText(content);
-        if (isDemoMode) {
-          const prompt = getDemoPrompts().find(p => p.id === promptId);
-          if (prompt) {
-            updateDemoPrompt(promptId, { usageCount: (prompt.usageCount || 0) + 1 });
-            setPrompts(getDemoPrompts());
-          }
-        } else {
-          await incrementUsageFn(user.uid, promptId);
-        }
+        await incrementUsageFn(user.uid, promptId);
         toast.success('Copied to clipboard!');
       } catch (error) {
         toast.error('Failed to copy prompt');
         throw error;
       }
     },
-    [user?.uid, isDemoMode, setPrompts]
+    [user?.uid]
   );
 
   // Get prompt by ID

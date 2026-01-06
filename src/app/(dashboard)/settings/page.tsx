@@ -6,23 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { useAuthStore } from '@/store/auth-store';
 import { useUIStore } from '@/store/ui-store';
 import { usePrompts } from '@/hooks/use-prompts';
 import { useCategories } from '@/hooks/use-categories';
 import { useTags } from '@/hooks/use-tags';
 import { useExpertRoles } from '@/hooks/use-expert-roles';
-import { exportAllData, seedSampleData } from '@/lib/firebase/firestore';
+import { exportAllData } from '@/lib/firebase/firestore';
 import { signOut } from '@/lib/firebase/auth';
 import type { ExportData } from '@/types';
 import {
@@ -34,8 +24,6 @@ import {
   User,
   LogOut,
   Loader2,
-  AlertTriangle,
-  CheckCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -50,8 +38,6 @@ export default function SettingsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
-  const [isSeeding, setIsSeeding] = useState(false);
-  const [showSeedDialog, setShowSeedDialog] = useState(false);
 
   const handleExport = async () => {
     if (!user) return;
@@ -131,24 +117,6 @@ export default function SettingsPage() {
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
-    }
-  };
-
-  const handleSeedData = async () => {
-    if (!user) return;
-
-    setIsSeeding(true);
-    try {
-      await seedSampleData(user.uid);
-      toast.success('Sample data created successfully');
-      // Refresh the page to load new data
-      window.location.reload();
-    } catch (error) {
-      console.error('Seed error:', error);
-      toast.error('Failed to create sample data');
-    } finally {
-      setIsSeeding(false);
-      setShowSeedDialog(false);
     }
   };
 
@@ -237,7 +205,7 @@ export default function SettingsPage() {
             Data Management
           </CardTitle>
           <CardDescription>
-            Export, import, or seed your data
+            Export and import your data
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -313,30 +281,6 @@ export default function SettingsPage() {
               </Button>
             </div>
           </div>
-
-          <Separator />
-
-          {/* Seed Data */}
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium">Sample Data</p>
-              <p className="text-sm text-muted-foreground">
-                Create sample categories, tags, and prompts
-              </p>
-            </div>
-            <Button
-              variant="secondary"
-              onClick={() => setShowSeedDialog(true)}
-              disabled={isSeeding}
-            >
-              {isSeeding ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Database className="mr-2 h-4 w-4" />
-              )}
-              Generate
-            </Button>
-          </div>
         </CardContent>
       </Card>
 
@@ -367,46 +311,6 @@ export default function SettingsPage() {
           </div>
         </CardContent>
       </Card>
-
-      {/* Seed Data Dialog */}
-      <AlertDialog open={showSeedDialog} onOpenChange={setShowSeedDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-yellow-500" />
-              Generate Sample Data
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              This will create sample categories, tags, expert roles, and prompts.
-              Existing data will NOT be affected.
-              <br /><br />
-              Sample data includes:
-              <ul className="list-disc list-inside mt-2 space-y-1">
-                <li>5 categories with subcategories</li>
-                <li>10+ tags for organizing prompts</li>
-                <li>5 expert roles</li>
-                <li>10+ sample prompts</li>
-              </ul>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isSeeding}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleSeedData} disabled={isSeeding}>
-              {isSeeding ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating...
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="mr-2 h-4 w-4" />
-                  Generate
-                </>
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

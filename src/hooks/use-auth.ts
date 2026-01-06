@@ -20,21 +20,14 @@ export function useAuth() {
     userData,
     isLoading,
     isAuthenticated,
-    isDemoMode,
     setUser,
     setUserData,
     setLoading,
     logout: clearAuth,
   } = useAuthStore();
 
-  // Listen for auth state changes (skip if in demo mode)
+  // Listen for auth state changes
   useEffect(() => {
-    // Don't listen to Firebase auth if in demo mode
-    if (isDemoMode) {
-      setLoading(false);
-      return;
-    }
-
     const unsubscribe = onAuthChange(async (firebaseUser) => {
       setUser(firebaseUser);
 
@@ -47,7 +40,7 @@ export function useAuth() {
     });
 
     return () => unsubscribe();
-  }, [isDemoMode, setUser, setUserData, setLoading]);
+  }, [setUser, setUserData, setLoading]);
 
   // Sign in with email
   const signIn = useCallback(
@@ -55,7 +48,6 @@ export function useAuth() {
       setLoading(true);
       try {
         await signInWithEmail(email, password);
-        // Navigation handled by auth page useEffect when isAuthenticated changes
       } catch (error) {
         setLoading(false);
         throw error;
@@ -70,7 +62,6 @@ export function useAuth() {
       setLoading(true);
       try {
         await registerWithEmail(email, password, displayName);
-        // Navigation handled by auth page useEffect when isAuthenticated changes
       } catch (error) {
         setLoading(false);
         throw error;
@@ -84,7 +75,6 @@ export function useAuth() {
     setLoading(true);
     try {
       await signInWithGoogle();
-      // Navigation handled by auth page useEffect when isAuthenticated changes
     } catch (error) {
       setLoading(false);
       throw error;
@@ -94,16 +84,13 @@ export function useAuth() {
   // Sign out
   const signOut = useCallback(async () => {
     try {
-      // Only call Firebase signOut if not in demo mode
-      if (!isDemoMode) {
-        await firebaseSignOut();
-      }
+      await firebaseSignOut();
       clearAuth();
       router.push('/login');
     } catch (error) {
       throw error;
     }
-  }, [router, clearAuth, isDemoMode]);
+  }, [router, clearAuth]);
 
   // Send password reset email
   const sendPasswordReset = useCallback(async (email: string) => {

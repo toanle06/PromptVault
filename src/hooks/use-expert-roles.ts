@@ -10,41 +10,26 @@ import {
   deleteExpertRole as deleteExpertRoleFn,
   importExpertRoles as importExpertRolesFn,
 } from '@/lib/firebase/firestore';
-import {
-  getDemoExpertRoles,
-  createDemoExpertRole,
-  updateDemoExpertRole,
-  deleteDemoExpertRole,
-  initializeDemoData,
-} from '@/lib/demo/demo-store';
 import type { ExpertRole } from '@/types';
 import { toast } from 'sonner';
 
 export function useExpertRoles() {
-  const { user, isDemoMode } = useAuthStore();
+  const { user } = useAuthStore();
   const { expertRoles, setExpertRoles, getExpertRoleById } = usePromptStore();
 
-  // Subscribe to expert roles (or load demo data)
+  // Subscribe to expert roles
   useEffect(() => {
     if (!user?.uid) {
       setExpertRoles([]);
       return;
     }
 
-    // Demo mode - load from localStorage
-    if (isDemoMode) {
-      initializeDemoData();
-      setExpertRoles(getDemoExpertRoles());
-      return;
-    }
-
-    // Firebase mode
     const unsubscribe = subscribeToExpertRoles(user.uid, (newRoles) => {
       setExpertRoles(newRoles);
     });
 
     return () => unsubscribe();
-  }, [user?.uid, isDemoMode, setExpertRoles]);
+  }, [user?.uid, setExpertRoles]);
 
   // Create expert role
   const createExpertRole = useCallback(
@@ -52,13 +37,7 @@ export function useExpertRoles() {
       if (!user?.uid) throw new Error('User not authenticated');
 
       try {
-        let id: string;
-        if (isDemoMode) {
-          id = createDemoExpertRole(data);
-          setExpertRoles(getDemoExpertRoles());
-        } else {
-          id = await createExpertRoleFn(user.uid, data);
-        }
+        const id = await createExpertRoleFn(user.uid, data);
         toast.success('Expert role created successfully');
         return id;
       } catch (error) {
@@ -66,7 +45,7 @@ export function useExpertRoles() {
         throw error;
       }
     },
-    [user?.uid, isDemoMode, setExpertRoles]
+    [user?.uid]
   );
 
   // Update expert role
@@ -75,19 +54,14 @@ export function useExpertRoles() {
       if (!user?.uid) throw new Error('User not authenticated');
 
       try {
-        if (isDemoMode) {
-          updateDemoExpertRole(roleId, data);
-          setExpertRoles(getDemoExpertRoles());
-        } else {
-          await updateExpertRoleFn(user.uid, roleId, data);
-        }
+        await updateExpertRoleFn(user.uid, roleId, data);
         toast.success('Expert role updated successfully');
       } catch (error) {
         toast.error('Failed to update expert role');
         throw error;
       }
     },
-    [user?.uid, isDemoMode, setExpertRoles]
+    [user?.uid]
   );
 
   // Delete expert role
@@ -96,19 +70,14 @@ export function useExpertRoles() {
       if (!user?.uid) throw new Error('User not authenticated');
 
       try {
-        if (isDemoMode) {
-          deleteDemoExpertRole(roleId);
-          setExpertRoles(getDemoExpertRoles());
-        } else {
-          await deleteExpertRoleFn(user.uid, roleId);
-        }
+        await deleteExpertRoleFn(user.uid, roleId);
         toast.success('Expert role deleted successfully');
       } catch (error) {
         toast.error('Failed to delete expert role');
         throw error;
       }
     },
-    [user?.uid, isDemoMode, setExpertRoles]
+    [user?.uid]
   );
 
   // Import expert roles
@@ -117,25 +86,13 @@ export function useExpertRoles() {
       if (!user?.uid) throw new Error('User not authenticated');
 
       try {
-        if (isDemoMode) {
-          rolesData.forEach(role => {
-            createDemoExpertRole({
-              name: role.name || 'Untitled',
-              description: role.description || '',
-              experience: role.experience || '',
-              systemPrompt: role.systemPrompt || '',
-            });
-          });
-          setExpertRoles(getDemoExpertRoles());
-        } else {
-          await importExpertRolesFn(user.uid, rolesData);
-        }
+        await importExpertRolesFn(user.uid, rolesData);
       } catch (error) {
         toast.error('Failed to import expert roles');
         throw error;
       }
     },
-    [user?.uid, isDemoMode, setExpertRoles]
+    [user?.uid]
   );
 
   return {

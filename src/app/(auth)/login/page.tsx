@@ -4,19 +4,17 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
-import { useAuthStore } from '@/store/auth-store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Sparkles, Loader2, Play } from 'lucide-react';
+import { Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function LoginPage() {
   const router = useRouter();
   const { signIn, signInGoogle, isLoading, isAuthenticated } = useAuth();
-  const { loginAsDemo } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -52,12 +50,6 @@ export default function LoginPage() {
     }
   };
 
-  const handleDemoLogin = () => {
-    loginAsDemo();
-    toast.success('Welcome to Demo Mode!');
-    router.push('/prompts');
-  };
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted p-4">
       <Card className="w-full max-w-md">
@@ -75,28 +67,6 @@ export default function LoginPage() {
         </CardHeader>
 
         <CardContent className="space-y-4">
-          {/* Demo Mode Button */}
-          <Button
-            variant="default"
-            className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700"
-            onClick={handleDemoLogin}
-            disabled={isLoading || isSubmitting}
-          >
-            <Play className="mr-2 h-4 w-4" />
-            Try Demo Mode (No Firebase Required)
-          </Button>
-
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <Separator />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
-                Or sign in with account
-              </span>
-            </div>
-          </div>
-
           <Button
             variant="outline"
             className="w-full"

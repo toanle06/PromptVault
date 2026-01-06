@@ -10,43 +10,27 @@ import {
   deleteTag as deleteTagFn,
   importTags as importTagsFn,
 } from '@/lib/firebase/firestore';
-import {
-  getDemoTags,
-  createDemoTag,
-  updateDemoTag,
-  deleteDemoTag,
-  initializeDemoData,
-} from '@/lib/demo/demo-store';
 import type { Tag } from '@/types';
 import { toast } from 'sonner';
 
 export function useTags() {
-  const { user, isDemoMode } = useAuthStore();
+  const { user } = useAuthStore();
   const { tags, isLoadingTags, setTags, setLoadingTags, getTagById } = usePromptStore();
 
-  // Subscribe to tags (or load demo data)
+  // Subscribe to tags
   useEffect(() => {
     if (!user?.uid) {
       setTags([]);
       return;
     }
 
-    // Demo mode - load from localStorage
-    if (isDemoMode) {
-      initializeDemoData();
-      setTags(getDemoTags());
-      setLoadingTags(false);
-      return;
-    }
-
-    // Firebase mode
     setLoadingTags(true);
     const unsubscribe = subscribeToTags(user.uid, (newTags) => {
       setTags(newTags);
     });
 
     return () => unsubscribe();
-  }, [user?.uid, isDemoMode, setTags, setLoadingTags]);
+  }, [user?.uid, setTags, setLoadingTags]);
 
   // Create tag
   const createTag = useCallback(
@@ -54,13 +38,7 @@ export function useTags() {
       if (!user?.uid) throw new Error('User not authenticated');
 
       try {
-        let id: string;
-        if (isDemoMode) {
-          id = createDemoTag(data);
-          setTags(getDemoTags());
-        } else {
-          id = await createTagFn(user.uid, data);
-        }
+        const id = await createTagFn(user.uid, data);
         toast.success('Tag created successfully');
         return id;
       } catch (error) {
@@ -68,7 +46,7 @@ export function useTags() {
         throw error;
       }
     },
-    [user?.uid, isDemoMode, setTags]
+    [user?.uid]
   );
 
   // Update tag
@@ -77,19 +55,14 @@ export function useTags() {
       if (!user?.uid) throw new Error('User not authenticated');
 
       try {
-        if (isDemoMode) {
-          updateDemoTag(tagId, data);
-          setTags(getDemoTags());
-        } else {
-          await updateTagFn(user.uid, tagId, data);
-        }
+        await updateTagFn(user.uid, tagId, data);
         toast.success('Tag updated successfully');
       } catch (error) {
         toast.error('Failed to update tag');
         throw error;
       }
     },
-    [user?.uid, isDemoMode, setTags]
+    [user?.uid]
   );
 
   // Delete tag
@@ -98,19 +71,14 @@ export function useTags() {
       if (!user?.uid) throw new Error('User not authenticated');
 
       try {
-        if (isDemoMode) {
-          deleteDemoTag(tagId);
-          setTags(getDemoTags());
-        } else {
-          await deleteTagFn(user.uid, tagId);
-        }
+        await deleteTagFn(user.uid, tagId);
         toast.success('Tag deleted successfully');
       } catch (error) {
         toast.error('Failed to delete tag');
         throw error;
       }
     },
-    [user?.uid, isDemoMode, setTags]
+    [user?.uid]
   );
 
   // Import tags
@@ -119,23 +87,13 @@ export function useTags() {
       if (!user?.uid) throw new Error('User not authenticated');
 
       try {
-        if (isDemoMode) {
-          tagsData.forEach(tag => {
-            createDemoTag({
-              name: tag.name || 'Untitled',
-              color: tag.color || '#6366f1',
-            });
-          });
-          setTags(getDemoTags());
-        } else {
-          await importTagsFn(user.uid, tagsData);
-        }
+        await importTagsFn(user.uid, tagsData);
       } catch (error) {
         toast.error('Failed to import tags');
         throw error;
       }
     },
-    [user?.uid, isDemoMode, setTags]
+    [user?.uid]
   );
 
   return {
