@@ -99,10 +99,10 @@ export function AppSidebar() {
                       asChild
                       isActive={pathname === item.url.split('?')[0]}
                     >
-                      <a href={item.url}>
+                      <Link href={item.url}>
                         <item.icon className="h-4 w-4" />
                         <span>{item.title}</span>
-                      </a>
+                      </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
@@ -207,10 +207,10 @@ export function AppSidebar() {
                       asChild
                       isActive={pathname === item.url}
                     >
-                      <a href={item.url}>
+                      <Link href={item.url}>
                         <item.icon className="h-4 w-4" />
                         <span>{item.title}</span>
-                      </a>
+                      </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
