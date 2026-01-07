@@ -233,15 +233,25 @@ export async function emptyTrash(userId: string): Promise<number> {
 // Real-time subscription for prompts
 export function subscribeToPrompts(
   userId: string,
-  callback: (prompts: Prompt[]) => void
+  callback: (prompts: Prompt[]) => void,
+  onError?: (error: Error) => void
 ): Unsubscribe {
   const promptsRef = getUserCollection(userId, 'prompts');
   const q = query(promptsRef, orderBy('createdAt', 'desc'));
 
-  return onSnapshot(q, (snapshot) => {
-    const prompts = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Prompt));
-    callback(prompts);
-  });
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const prompts = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Prompt));
+      callback(prompts);
+    },
+    (error) => {
+      console.error('Error subscribing to prompts:', error);
+      // Still call callback with empty array to stop loading state
+      callback([]);
+      onError?.(error);
+    }
+  );
 }
 
 // ========================
@@ -299,15 +309,24 @@ export async function restorePromptVersion(
 export function subscribeToPromptVersions(
   userId: string,
   promptId: string,
-  callback: (versions: PromptVersion[]) => void
+  callback: (versions: PromptVersion[]) => void,
+  onError?: (error: Error) => void
 ): Unsubscribe {
   const versionsRef = collection(getDb(), 'users', userId, 'prompts', promptId, 'versions');
   const q = query(versionsRef, orderBy('version', 'desc'));
 
-  return onSnapshot(q, (snapshot) => {
-    const versions = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as PromptVersion));
-    callback(versions);
-  });
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const versions = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as PromptVersion));
+      callback(versions);
+    },
+    (error) => {
+      console.error('Error subscribing to versions:', error);
+      callback([]);
+      onError?.(error);
+    }
+  );
 }
 
 // ========================
@@ -425,15 +444,24 @@ export async function reorderAttachments(
 export function subscribeToAttachments(
   userId: string,
   promptId: string,
-  callback: (attachments: PromptAttachment[]) => void
+  callback: (attachments: PromptAttachment[]) => void,
+  onError?: (error: Error) => void
 ): Unsubscribe {
   const attachmentsRef = collection(getDb(), 'users', userId, 'prompts', promptId, 'attachments');
   const q = query(attachmentsRef, orderBy('order', 'asc'));
 
-  return onSnapshot(q, (snapshot) => {
-    const attachments = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as PromptAttachment));
-    callback(attachments);
-  });
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const attachments = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as PromptAttachment));
+      callback(attachments);
+    },
+    (error) => {
+      console.error('Error subscribing to attachments:', error);
+      callback([]);
+      onError?.(error);
+    }
+  );
 }
 
 // Delete all attachments for a prompt
@@ -603,15 +631,24 @@ export async function deleteCategory(userId: string, categoryId: string): Promis
 // Real-time subscription for categories
 export function subscribeToCategories(
   userId: string,
-  callback: (categories: Category[]) => void
+  callback: (categories: Category[]) => void,
+  onError?: (error: Error) => void
 ): Unsubscribe {
   const categoriesRef = getUserCollection(userId, 'categories');
   const q = query(categoriesRef, orderBy('order', 'asc'));
 
-  return onSnapshot(q, (snapshot) => {
-    const categories = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Category));
-    callback(categories);
-  });
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const categories = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Category));
+      callback(categories);
+    },
+    (error) => {
+      console.error('Error subscribing to categories:', error);
+      callback([]);
+      onError?.(error);
+    }
+  );
 }
 
 // ========================
@@ -656,15 +693,24 @@ export async function deleteTag(userId: string, tagId: string): Promise<void> {
 // Real-time subscription for tags
 export function subscribeToTags(
   userId: string,
-  callback: (tags: Tag[]) => void
+  callback: (tags: Tag[]) => void,
+  onError?: (error: Error) => void
 ): Unsubscribe {
   const tagsRef = getUserCollection(userId, 'tags');
   const q = query(tagsRef, orderBy('name', 'asc'));
 
-  return onSnapshot(q, (snapshot) => {
-    const tags = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Tag));
-    callback(tags);
-  });
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const tags = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Tag));
+      callback(tags);
+    },
+    (error) => {
+      console.error('Error subscribing to tags:', error);
+      callback([]);
+      onError?.(error);
+    }
+  );
 }
 
 // ========================
@@ -708,15 +754,24 @@ export async function deleteExpertRole(userId: string, roleId: string): Promise<
 // Real-time subscription for expert roles
 export function subscribeToExpertRoles(
   userId: string,
-  callback: (roles: ExpertRole[]) => void
+  callback: (roles: ExpertRole[]) => void,
+  onError?: (error: Error) => void
 ): Unsubscribe {
   const rolesRef = getUserCollection(userId, 'expertRoles');
   const q = query(rolesRef, orderBy('name', 'asc'));
 
-  return onSnapshot(q, (snapshot) => {
-    const roles = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as ExpertRole));
-    callback(roles);
-  });
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const roles = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as ExpertRole));
+      callback(roles);
+    },
+    (error) => {
+      console.error('Error subscribing to expert roles:', error);
+      callback([]);
+      onError?.(error);
+    }
+  );
 }
 
 // ========================

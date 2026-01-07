@@ -12,12 +12,7 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Check if we have valid Firebase configuration
-const hasValidConfig = firebaseConfig.apiKey &&
-  firebaseConfig.apiKey !== 'your_api_key_here' &&
-  typeof window !== 'undefined';
-
-// Initialize Firebase only if it hasn't been initialized and we have valid config
+// Initialize Firebase only if it hasn't been initialized
 let app: FirebaseApp | undefined;
 let auth: Auth | undefined;
 let db: Firestore | undefined;
@@ -28,7 +23,16 @@ if (typeof window !== 'undefined') {
     app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
     auth = getAuth(app);
     db = getFirestore(app);
-    storage = getStorage(app);
+
+    // Initialize Storage separately to avoid breaking auth/db if storage fails
+    if (firebaseConfig.storageBucket) {
+      try {
+        storage = getStorage(app);
+      } catch (storageError) {
+        console.warn('Firebase Storage initialization failed. Storage features will be disabled.');
+        console.warn(storageError);
+      }
+    }
   } catch (error) {
     console.warn('Firebase initialization failed. Make sure to configure your Firebase credentials in .env.local');
     console.warn(error);
