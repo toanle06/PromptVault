@@ -6,11 +6,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { PromptCardSkeleton, StatCardSkeleton, ListItemSkeleton } from '@/components/ui/skeleton-variants';
 import { usePrompts } from '@/hooks/use-prompts';
 import { useCategories } from '@/hooks/use-categories';
 import { useTags } from '@/hooks/use-tags';
 import { useUIStore } from '@/store/ui-store';
 import { PromptCard } from '@/components/prompts/prompt-card';
+import { ErrorAlert, getErrorMessage } from '@/components/ui/error-alert';
+import { EmptyState } from '@/components/ui/empty-state';
+import { WelcomeBanner } from '@/components/onboarding/welcome-banner';
+import { QuickActions } from '@/components/dashboard/quick-actions';
+import { StatCard } from '@/components/dashboard/stat-card';
 import {
   FileText,
   FolderOpen,
@@ -33,35 +39,44 @@ export default function DashboardPage() {
     .sort((a, b) => b.usageCount - a.usageCount)
     .slice(0, 3);
 
+  // Calculate some useful metrics
+  const pinnedPrompts = prompts.filter((p) => p.isPinned);
+  const totalUsageCount = prompts.reduce((sum, p) => sum + (p.usageCount || 0), 0);
+
   const stats = [
     {
       title: 'Total Prompts',
       value: prompts.length,
       icon: FileText,
       color: 'text-blue-500',
+      description: pinnedPrompts.length > 0 ? `${pinnedPrompts.length} pinned` : 'Start building your library',
     },
     {
       title: 'Categories',
       value: categories.length,
       icon: FolderOpen,
       color: 'text-green-500',
+      description: 'Organize your prompts',
     },
     {
       title: 'Tags',
       value: tags.length,
       icon: Tags,
       color: 'text-purple-500',
+      description: 'Quick filtering',
     },
     {
       title: 'Favorites',
       value: favoritePrompts.length,
       icon: Star,
       color: 'text-yellow-500',
+      description: totalUsageCount > 0 ? `${totalUsageCount} total uses` : 'Star your best prompts',
     },
   ];
 
   const isLoading = isLoadingPrompts || isLoadingCategories || isLoadingTags;
-  const { error } = usePrompts();
+  const { error, refetch } = usePrompts();
+  const errorDetails = error ? getErrorMessage(error) : null;
 
   return (
     <div className="space-y-6">
@@ -79,35 +94,43 @@ export default function DashboardPage() {
         </Button>
       </div>
 
-      {error ? (
-        <div className="bg-destructive/15 text-destructive p-4 rounded-md border border-destructive/20 mb-6">
-          <h3 className="font-medium text-lg mb-1">Error Loading Data</h3>
-          <p className="mb-2">{error}</p>
-          <p className="text-sm opacity-80">
-            This often happens if the required Firestore index is missing. Check the browser console
-            for a direct link to create the index in the Firebase Console.
-          </p>
-        </div>
-      ) : null}
+      {errorDetails && (
+        <ErrorAlert
+          title={errorDetails.title}
+          message={errorDetails.message}
+          technicalDetails={errorDetails.technicalDetails}
+          onRetry={refetch}
+          className="mb-6"
+        />
+      )}
+
+      {/* Welcome banner for new users */}
+      <WelcomeBanner />
 
       {/* Stats */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat) => (
-          <Card key={stat.title}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-              <stat.icon className={`h-4 w-4 ${stat.color}`} />
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <Skeleton className="h-8 w-16" />
-              ) : (
-                <div className="text-2xl font-bold">{stat.value}</div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
+        {isLoading ? (
+          <>
+            {[1, 2, 3, 4].map((i) => (
+              <StatCardSkeleton key={i} />
+            ))}
+          </>
+        ) : (
+          stats.map((stat) => (
+            <StatCard
+              key={stat.title}
+              title={stat.title}
+              value={stat.value}
+              icon={stat.icon}
+              iconColor={stat.color}
+              description={stat.description}
+            />
+          ))
+        )}
       </div>
+
+      {/* Quick Actions */}
+      <QuickActions />
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Recent Prompts */}
@@ -128,7 +151,7 @@ export default function DashboardPage() {
             {isLoading ? (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {[1, 2, 3].map((i) => (
-                  <Skeleton key={i} className="h-48" />
+                  <PromptCardSkeleton key={i} />
                 ))}
               </div>
             ) : recentPrompts.length > 0 ? (
@@ -138,17 +161,11 @@ export default function DashboardPage() {
                 ))}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <FileText className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium">No prompts yet</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Create your first prompt to get started
-                </p>
-                <Button onClick={() => setCreatePromptOpen(true)}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create Prompt
-                </Button>
-              </div>
+              <EmptyState
+                preset="prompts"
+                onAction={() => setCreatePromptOpen(true)}
+                size="default"
+              />
             )}
           </CardContent>
         </Card>
@@ -164,9 +181,9 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <div className="space-y-4">
+              <div className="space-y-2">
                 {[1, 2, 3].map((i) => (
-                  <Skeleton key={i} className="h-16" />
+                  <ListItemSkeleton key={i} />
                 ))}
               </div>
             ) : mostUsedPrompts.length > 0 ? (
@@ -190,9 +207,12 @@ export default function DashboardPage() {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                No usage data yet
-              </p>
+              <EmptyState
+                icon={TrendingUp}
+                title="No usage data yet"
+                description="Use your prompts to see analytics here."
+                size="sm"
+              />
             )}
           </CardContent>
         </Card>
@@ -208,9 +228,9 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <div className="space-y-4">
+              <div className="space-y-2">
                 {[1, 2, 3].map((i) => (
-                  <Skeleton key={i} className="h-16" />
+                  <ListItemSkeleton key={i} />
                 ))}
               </div>
             ) : favoritePrompts.length > 0 ? (
@@ -235,9 +255,10 @@ export default function DashboardPage() {
                 )}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                No favorites yet. Star prompts to add them here.
-              </p>
+              <EmptyState
+                preset="favorites"
+                size="sm"
+              />
             )}
           </CardContent>
         </Card>

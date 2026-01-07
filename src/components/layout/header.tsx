@@ -14,6 +14,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { SearchBar } from '@/components/search/search-bar';
+import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { useAuth } from '@/hooks/use-auth';
 import { useUIStore } from '@/store/ui-store';
 import {
@@ -48,8 +49,12 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 flex h-14 items-center gap-4 border-b bg-background px-4 lg:px-6">
-      <SidebarTrigger className="-ml-2" />
+    <header
+      className="sticky top-0 z-50 flex h-14 items-center gap-4 border-b bg-background px-4 lg:px-6"
+      role="banner"
+      aria-label="Main header"
+    >
+      <SidebarTrigger className="-ml-2" aria-label="Toggle sidebar" />
 
       <div className="flex flex-1 items-center justify-center">
         <SearchBar />
@@ -70,8 +75,9 @@ export function Header() {
           size="icon"
           variant="ghost"
           className="sm:hidden"
+          aria-label="Create new prompt"
         >
-          <Plus className="h-5 w-5" />
+          <Plus className="h-5 w-5" aria-hidden="true" />
         </Button>
 
         <Button
@@ -80,19 +86,20 @@ export function Header() {
           variant="ghost"
           className="hidden sm:flex"
           title="Keyboard Shortcuts (?)"
+          aria-label="View keyboard shortcuts"
         >
-          <Keyboard className="h-5 w-5" />
+          <Keyboard className="h-5 w-5" aria-hidden="true" />
         </Button>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
-              {theme === 'light' && <Sun className="h-5 w-5" />}
-              {theme === 'dark' && <Moon className="h-5 w-5" />}
-              {theme === 'system' && <Monitor className="h-5 w-5" />}
+            <Button variant="ghost" size="icon" aria-label={`Current theme: ${theme}. Click to change theme`}>
+              {theme === 'light' && <Sun className="h-5 w-5" aria-hidden="true" />}
+              {theme === 'dark' && <Moon className="h-5 w-5" aria-hidden="true" />}
+              {theme === 'system' && <Monitor className="h-5 w-5" aria-hidden="true" />}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" aria-label="Theme options">
             <DropdownMenuLabel>Theme</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => setTheme('light')}>
@@ -112,19 +119,24 @@ export function Header() {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+            <Button
+              variant="ghost"
+              className="relative h-8 w-8 rounded-full"
+              aria-label={`User menu for ${user?.displayName || user?.email || 'User'}`}
+            >
               <Avatar className="h-8 w-8">
                 <AvatarImage
                   src={user?.photoURL || undefined}
-                  alt={user?.displayName || 'User'}
+                  alt=""
+                  aria-hidden="true"
                 />
-                <AvatarFallback>
+                <AvatarFallback aria-hidden="true">
                   {getInitials(user?.displayName || user?.email)}
                 </AvatarFallback>
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-56" align="end">
+          <DropdownMenuContent className="w-56" align="end" aria-label="User menu">
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-medium leading-none">

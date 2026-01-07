@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
+import { CategoryCardSkeleton } from '@/components/ui/skeleton-variants';
 import {
   Dialog,
   DialogContent,
@@ -34,6 +34,7 @@ import {
 } from '@/components/ui/select';
 import { useCategories } from '@/hooks/use-categories';
 import { usePrompts } from '@/hooks/use-prompts';
+import { EmptyState } from '@/components/ui/empty-state';
 import type { Category } from '@/types';
 import { Plus, Edit, Trash2, FolderOpen, Loader2, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -161,12 +162,15 @@ export default function CategoriesPage() {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <Skeleton className="h-10 w-48" />
-          <Skeleton className="h-10 w-32" />
+          <div className="space-y-1">
+            <div className="h-8 w-32 bg-muted rounded animate-pulse" />
+            <div className="h-5 w-64 bg-muted rounded animate-pulse" />
+          </div>
+          <div className="h-10 w-32 bg-muted rounded-md animate-pulse" />
         </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <Skeleton key={i} className="h-32" />
+        <div className="space-y-4">
+          {[1, 2, 3, 4].map((i) => (
+            <CategoryCardSkeleton key={i} />
           ))}
         </div>
       </div>
@@ -277,16 +281,11 @@ export default function CategoriesPage() {
         </div>
       ) : (
         <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <FolderOpen className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium">No categories yet</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Create your first category to organize prompts
-            </p>
-            <Button onClick={() => handleOpenDialog()}>
-              <Plus className="mr-2 h-4 w-4" />
-              Create Category
-            </Button>
+          <CardContent className="py-0">
+            <EmptyState
+              preset="categories"
+              onAction={() => handleOpenDialog()}
+            />
           </CardContent>
         </Card>
       )}

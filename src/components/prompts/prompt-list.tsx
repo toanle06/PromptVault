@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
+import { PromptCardSkeleton } from '@/components/ui/skeleton-variants';
 import {
   Select,
   SelectContent,
@@ -23,10 +23,11 @@ import {
 } from '@/components/ui/alert-dialog';
 import { PromptCard } from './prompt-card';
 import { BulkSelectionBar } from './bulk-selection-bar';
+import { EmptyState } from '@/components/ui/empty-state';
 import { usePrompts } from '@/hooks/use-prompts';
 import { useUIStore } from '@/store/ui-store';
 import type { Prompt, SortOptions } from '@/types';
-import { LayoutGrid, List, Plus, FileText, CheckSquare, Square } from 'lucide-react';
+import { LayoutGrid, List, CheckSquare, Square, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface PromptListProps {
@@ -95,11 +96,12 @@ export function PromptList({ prompts, isLoading, isTrashView = false }: PromptLi
   if (isLoading) {
     return (
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-10 w-32" />
-          <div className="flex gap-2">
-            <Skeleton className="h-10 w-40" />
-            <Skeleton className="h-10 w-20" />
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="h-5 w-24 bg-muted rounded animate-pulse" />
+          <div className="flex items-center gap-2">
+            <div className="h-9 w-24 bg-muted rounded-md animate-pulse" />
+            <div className="h-9 w-40 bg-muted rounded-md animate-pulse" />
+            <div className="h-9 w-20 bg-muted rounded-md animate-pulse" />
           </div>
         </div>
         <div className={cn(
@@ -107,7 +109,7 @@ export function PromptList({ prompts, isLoading, isTrashView = false }: PromptLi
           viewMode === 'grid' ? 'md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'
         )}>
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <Skeleton key={i} className="h-48" />
+            <PromptCardSkeleton key={i} />
           ))}
         </div>
       </div>
@@ -222,17 +224,13 @@ export function PromptList({ prompts, isLoading, isTrashView = false }: PromptLi
           ))}
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <FileText className="h-12 w-12 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-medium">No prompts found</h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            Create your first prompt or adjust your filters
-          </p>
-          <Button onClick={() => setCreatePromptOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Create Prompt
-          </Button>
-        </div>
+        <EmptyState
+          icon={Search}
+          title="No prompts found"
+          description="Create your first prompt or adjust your filters"
+          actionLabel="Create Prompt"
+          onAction={() => setCreatePromptOpen(true)}
+        />
       )}
 
       {/* Delete Confirmation Dialog */}

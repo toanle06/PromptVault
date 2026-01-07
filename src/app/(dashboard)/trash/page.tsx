@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { usePrompts } from '@/hooks/use-prompts';
 import { useCategories } from '@/hooks/use-categories';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Trash2, RotateCcw, AlertTriangle, Loader2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -92,12 +93,11 @@ export default function TrashPage() {
       {/* Empty state */}
       {deletedPrompts.length === 0 ? (
         <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <Trash2 className="h-12 w-12 text-muted-foreground mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Trash is empty</h2>
-            <p className="text-muted-foreground text-center max-w-sm">
-              When you delete prompts, they will appear here. You can restore them or permanently delete them.
-            </p>
+          <CardContent className="py-0">
+            <EmptyState
+              preset="trash"
+              description="When you delete prompts, they will appear here. You can restore them or permanently delete them."
+            />
           </CardContent>
         </Card>
       ) : (

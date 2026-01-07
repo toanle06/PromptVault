@@ -57,11 +57,14 @@ export function SearchBar() {
         variant="outline"
         className="relative h-9 w-full justify-start text-sm text-muted-foreground sm:w-64 md:w-80 lg:w-96"
         onClick={() => setSearchOpen(true)}
+        data-search-input
+        aria-label="Search prompts. Press Command K to open search dialog"
+        aria-keyshortcuts="Meta+K"
       >
-        <Search className="mr-2 h-4 w-4" />
+        <Search className="mr-2 h-4 w-4" aria-hidden="true" />
         <span className="hidden sm:inline">Search prompts...</span>
         <span className="sm:hidden">Search...</span>
-        <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
+        <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex" aria-hidden="true">
           <span className="text-xs">⌘</span>K
         </kbd>
       </Button>

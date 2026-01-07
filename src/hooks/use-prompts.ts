@@ -345,6 +345,15 @@ export function usePrompts() {
     [user?.uid]
   );
 
+  // Refetch function - clears error and reloads the page to reset subscription
+  const refetch = useCallback(() => {
+    setError(null);
+    setLoading(true);
+    // The subscription manager will re-subscribe automatically
+    // Force a page reload as last resort
+    window.location.reload();
+  }, [setError, setLoading]);
+
   return {
     prompts,
     filteredPrompts: getFilteredPrompts(),
@@ -376,5 +385,6 @@ export function usePrompts() {
     restoreVersion,
     bulkOperation,
     error,
+    refetch,
   };
 }

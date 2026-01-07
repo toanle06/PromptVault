@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -18,7 +19,13 @@ import {
   SidebarMenuSubButton,
 } from '@/components/ui/sidebar';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import { useCategories } from '@/hooks/use-categories';
 import { useTags } from '@/hooks/use-tags';
 import { usePromptStore } from '@/store/prompt-store';
@@ -31,10 +38,14 @@ import {
   Settings,
   Sparkles,
   ChevronRight,
+  ChevronDown,
   Trash2,
   Pin,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+const INITIAL_CATEGORIES_SHOWN = 5;
+const INITIAL_TAGS_SHOWN = 8;
 
 const mainNavItems = [
   { title: 'Dashboard', url: '/', icon: Home },
@@ -57,6 +68,12 @@ export function AppSidebar() {
   const { tags, isLoading: isLoadingTags } = useTags();
   const { prompts, setFilters, filters } = usePromptStore();
 
+  // Collapsible states
+  const [categoriesOpen, setCategoriesOpen] = useState(true);
+  const [tagsOpen, setTagsOpen] = useState(true);
+  const [showAllCategories, setShowAllCategories] = useState(false);
+  const [showAllTags, setShowAllTags] = useState(false);
+
   const handleCategoryFilter = (categoryId: string | undefined) => {
     setFilters({ categoryId, subcategoryId: undefined });
     router.push('/prompts');
@@ -77,11 +94,22 @@ export function AppSidebar() {
     return prompts.filter((p) => p.tags.includes(tagId)).length;
   };
 
+  // Limit displayed items
+  const displayedCategories = showAllCategories
+    ? categoriesTree.main
+    : categoriesTree.main.slice(0, INITIAL_CATEGORIES_SHOWN);
+  const hasMoreCategories = categoriesTree.main.length > INITIAL_CATEGORIES_SHOWN;
+
+  const displayedTags = showAllTags
+    ? tags
+    : tags.slice(0, INITIAL_TAGS_SHOWN);
+  const hasMoreTags = tags.length > INITIAL_TAGS_SHOWN;
+
   return (
-    <Sidebar>
+    <Sidebar aria-label="Main navigation sidebar">
       <SidebarHeader className="border-b px-4 py-3">
         <div className="flex items-center gap-2">
-          <Sparkles className="h-6 w-6 text-primary" />
+          <Sparkles className="h-6 w-6 text-primary" aria-hidden="true" />
           <span className="text-lg font-bold">PromptVault</span>
         </div>
       </SidebarHeader>
@@ -111,90 +139,166 @@ export function AppSidebar() {
           </SidebarGroup>
 
           {/* Categories */}
-          <SidebarGroup>
-            <SidebarGroupLabel>Categories</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    onClick={() => handleCategoryFilter(undefined)}
-                    isActive={!filters.categoryId && pathname === '/prompts'}
-                  >
-                    <FolderOpen className="h-4 w-4" />
-                    <span>All Categories</span>
-                    <Badge variant="secondary" className="ml-auto">
-                      {prompts.length}
-                    </Badge>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-
-                {!isLoadingCategories &&
-                  categoriesTree.main.map((category) => (
-                    <SidebarMenuItem key={category.id}>
+          <Collapsible open={categoriesOpen} onOpenChange={setCategoriesOpen}>
+            <SidebarGroup>
+              <CollapsibleTrigger asChild>
+                <SidebarGroupLabel
+                  className="cursor-pointer hover:bg-accent/50 rounded-md transition-colors flex items-center justify-between pr-2"
+                  aria-expanded={categoriesOpen}
+                  aria-controls="categories-content"
+                >
+                  <span>Categories</span>
+                  <ChevronDown
+                    className={cn(
+                      "h-4 w-4 transition-transform duration-200",
+                      categoriesOpen ? "" : "-rotate-90"
+                    )}
+                    aria-hidden="true"
+                  />
+                </SidebarGroupLabel>
+              </CollapsibleTrigger>
+              <CollapsibleContent id="categories-content">
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    <SidebarMenuItem>
                       <SidebarMenuButton
-                        onClick={() => handleCategoryFilter(category.id)}
-                        isActive={filters.categoryId === category.id}
+                        onClick={() => handleCategoryFilter(undefined)}
+                        isActive={!filters.categoryId && pathname === '/prompts'}
                       >
-                        <div
-                          className="h-3 w-3 rounded-full"
-                          style={{ backgroundColor: category.color || '#6366f1' }}
-                        />
-                        <span>{category.name}</span>
+                        <FolderOpen className="h-4 w-4" aria-hidden="true" />
+                        <span>All Categories</span>
                         <Badge variant="secondary" className="ml-auto">
-                          {getPromptCountForCategory(category.id)}
+                          <span className="sr-only">{prompts.filter(p => !p.isDeleted).length} prompts</span>
+                          <span aria-hidden="true">{prompts.filter(p => !p.isDeleted).length}</span>
                         </Badge>
                       </SidebarMenuButton>
-
-                      {/* Subcategories */}
-                      {categoriesTree.subs[category.id]?.length > 0 && (
-                        <SidebarMenuSub>
-                          {categoriesTree.subs[category.id].map((sub) => (
-                            <SidebarMenuSubItem key={sub.id}>
-                              <SidebarMenuSubButton
-                                onClick={() => handleCategoryFilter(sub.id)}
-                                isActive={filters.categoryId === sub.id}
-                              >
-                                <span>{sub.name}</span>
-                                <Badge variant="outline" className="ml-auto text-xs">
-                                  {getPromptCountForCategory(sub.id)}
-                                </Badge>
-                              </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
-                          ))}
-                        </SidebarMenuSub>
-                      )}
                     </SidebarMenuItem>
-                  ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+
+                    {!isLoadingCategories &&
+                      displayedCategories.map((category) => (
+                        <SidebarMenuItem key={category.id}>
+                          <SidebarMenuButton
+                            onClick={() => handleCategoryFilter(category.id)}
+                            isActive={filters.categoryId === category.id}
+                          >
+                            <div
+                              className="h-3 w-3 rounded-full flex-shrink-0"
+                              style={{ backgroundColor: category.color || '#6366f1' }}
+                            />
+                            <span className="truncate">{category.name}</span>
+                            <Badge variant="secondary" className="ml-auto flex-shrink-0">
+                              {getPromptCountForCategory(category.id)}
+                            </Badge>
+                          </SidebarMenuButton>
+
+                          {/* Subcategories */}
+                          {categoriesTree.subs[category.id]?.length > 0 && (
+                            <SidebarMenuSub>
+                              {categoriesTree.subs[category.id].map((sub) => (
+                                <SidebarMenuSubItem key={sub.id}>
+                                  <SidebarMenuSubButton
+                                    onClick={() => handleCategoryFilter(sub.id)}
+                                    isActive={filters.categoryId === sub.id}
+                                  >
+                                    <span className="truncate">{sub.name}</span>
+                                    <Badge variant="outline" className="ml-auto text-xs flex-shrink-0">
+                                      {getPromptCountForCategory(sub.id)}
+                                    </Badge>
+                                  </SidebarMenuSubButton>
+                                </SidebarMenuSubItem>
+                              ))}
+                            </SidebarMenuSub>
+                          )}
+                        </SidebarMenuItem>
+                      ))}
+
+                    {/* Show more/less button */}
+                    {hasMoreCategories && (
+                      <SidebarMenuItem>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full justify-start text-muted-foreground hover:text-foreground"
+                          onClick={() => setShowAllCategories(!showAllCategories)}
+                        >
+                          <ChevronRight className={cn(
+                            "h-4 w-4 mr-2 transition-transform",
+                            showAllCategories && "rotate-90"
+                          )} />
+                          {showAllCategories
+                            ? 'Show less'
+                            : `Show ${categoriesTree.main.length - INITIAL_CATEGORIES_SHOWN} more`}
+                        </Button>
+                      </SidebarMenuItem>
+                    )}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </SidebarGroup>
+          </Collapsible>
 
           {/* Tags */}
-          <SidebarGroup>
-            <SidebarGroupLabel>Popular Tags</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <div className="flex flex-wrap gap-1 px-2">
-                {!isLoadingTags &&
-                  tags.slice(0, 10).map((tag) => (
-                    <Badge
-                      key={tag.id}
-                      variant="outline"
-                      className="cursor-pointer hover:bg-accent"
-                      style={{
-                        borderColor: tag.color || undefined,
-                        color: tag.color || undefined,
-                      }}
-                      onClick={() => handleTagFilter(tag.id)}
+          <Collapsible open={tagsOpen} onOpenChange={setTagsOpen}>
+            <SidebarGroup>
+              <CollapsibleTrigger asChild>
+                <SidebarGroupLabel
+                  className="cursor-pointer hover:bg-accent/50 rounded-md transition-colors flex items-center justify-between pr-2"
+                  aria-expanded={tagsOpen}
+                  aria-controls="tags-content"
+                >
+                  <span>Popular Tags</span>
+                  <ChevronDown
+                    className={cn(
+                      "h-4 w-4 transition-transform duration-200",
+                      tagsOpen ? "" : "-rotate-90"
+                    )}
+                    aria-hidden="true"
+                  />
+                </SidebarGroupLabel>
+              </CollapsibleTrigger>
+              <CollapsibleContent id="tags-content">
+                <SidebarGroupContent>
+                  <div className="flex flex-wrap gap-1.5 px-2 py-1">
+                    {!isLoadingTags &&
+                      displayedTags.map((tag) => (
+                        <Badge
+                          key={tag.id}
+                          variant="outline"
+                          className="cursor-pointer hover:bg-accent transition-colors"
+                          style={{
+                            borderColor: tag.color || undefined,
+                            color: tag.color || undefined,
+                          }}
+                          onClick={() => handleTagFilter(tag.id)}
+                        >
+                          {tag.name}
+                          <span className="ml-1 text-muted-foreground">
+                            ({getPromptCountForTag(tag.id)})
+                          </span>
+                        </Badge>
+                      ))}
+                  </div>
+                  {/* Show more/less button for tags */}
+                  {hasMoreTags && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full justify-start text-muted-foreground hover:text-foreground mt-1"
+                      onClick={() => setShowAllTags(!showAllTags)}
                     >
-                      {tag.name}
-                      <span className="ml-1 text-muted-foreground">
-                        ({getPromptCountForTag(tag.id)})
-                      </span>
-                    </Badge>
-                  ))}
-              </div>
-            </SidebarGroupContent>
-          </SidebarGroup>
+                      <ChevronRight className={cn(
+                        "h-4 w-4 mr-2 transition-transform",
+                        showAllTags && "rotate-90"
+                      )} />
+                      {showAllTags
+                        ? 'Show less'
+                        : `Show ${tags.length - INITIAL_TAGS_SHOWN} more`}
+                    </Button>
+                  )}
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </SidebarGroup>
+          </Collapsible>
 
           {/* Management */}
           <SidebarGroup>

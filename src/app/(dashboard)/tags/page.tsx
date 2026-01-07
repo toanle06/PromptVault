@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
+import { TagChipSkeleton } from '@/components/ui/skeleton-variants';
 import {
   Dialog,
   DialogContent,
@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useTags } from '@/hooks/use-tags';
 import { usePrompts } from '@/hooks/use-prompts';
+import { EmptyState } from '@/components/ui/empty-state';
 import type { Tag, TagFormData } from '@/types';
 import { Plus, Edit, Trash2, Tags, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -147,14 +148,21 @@ export default function TagsPage() {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <Skeleton className="h-10 w-48" />
-          <Skeleton className="h-10 w-32" />
+          <div className="space-y-1">
+            <div className="h-8 w-24 bg-muted rounded animate-pulse" />
+            <div className="h-5 w-56 bg-muted rounded animate-pulse" />
+          </div>
+          <div className="h-10 w-28 bg-muted rounded-md animate-pulse" />
         </div>
         <Card>
-          <CardContent className="pt-6">
+          <CardHeader>
+            <div className="h-5 w-32 bg-muted rounded animate-pulse" />
+            <div className="h-4 w-40 bg-muted rounded animate-pulse mt-1" />
+          </CardHeader>
+          <CardContent>
             <div className="flex flex-wrap gap-3">
               {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-                <Skeleton key={i} className="h-10 w-24" />
+                <TagChipSkeleton key={i} />
               ))}
             </div>
           </CardContent>
@@ -243,16 +251,11 @@ export default function TagsPage() {
         </Card>
       ) : (
         <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <Tags className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium">No tags yet</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Create your first tag to organize prompts
-            </p>
-            <Button onClick={() => handleOpenDialog()}>
-              <Plus className="mr-2 h-4 w-4" />
-              Create Tag
-            </Button>
+          <CardContent className="py-0">
+            <EmptyState
+              preset="tags"
+              onAction={() => handleOpenDialog()}
+            />
           </CardContent>
         </Card>
       )}
