@@ -432,6 +432,25 @@ export function PromptForm({ prompt, onSubmit, onCancel, isSubmitting }: PromptF
                       ))}
                   </div>
                 </div>
+
+                {/* Video Models */}
+                <div>
+                  <p className="text-xs text-muted-foreground mb-2">Video Models</p>
+                  <div className="flex flex-wrap gap-1">
+                    {AI_MODELS
+                      .filter((model) => model.category === 'video' && !selectedModels.includes(model.value))
+                      .map((model) => (
+                        <Badge
+                          key={model.value}
+                          variant="outline"
+                          className="cursor-pointer hover:bg-accent"
+                          onClick={() => handleAddModel(model.value)}
+                        >
+                          {model.label}
+                        </Badge>
+                      ))}
+                  </div>
+                </div>
               </div>
               <FormMessage />
             </FormItem>

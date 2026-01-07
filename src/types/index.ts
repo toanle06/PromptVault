@@ -22,46 +22,50 @@ export interface UserPreferences {
 
 // AI Model Types
 export type AIModel =
-  | 'gpt-4'
-  | 'gpt-4-turbo'
-  | 'gpt-4o'
-  | 'gpt-3.5-turbo'
-  | 'claude-3-opus'
-  | 'claude-3-sonnet'
-  | 'claude-3-haiku'
-  | 'claude-3.5-sonnet'
-  | 'gemini-pro'
-  | 'gemini-ultra'
-  | 'gemini-2.0-flash'
-  | 'llama-3'
+  | 'chatgpt'
+  | 'claude'
+  | 'gemini'
+  | 'copilot'
+  | 'perplexity'
+  | 'llama'
   | 'mistral'
+  | 'grok'
   | 'midjourney'
-  | 'dall-e-3'
+  | 'dall-e'
   | 'stable-diffusion'
+  | 'ideogram'
+  | 'flux'
+  | 'leonardo'
+  | 'google-veo'
+  | 'runway'
+  | 'pika'
+  | 'sora'
+  | 'kling'
   | 'other';
 
-export const AI_MODELS: { value: AIModel; label: string; category: 'text' | 'image' }[] = [
-  // OpenAI
-  { value: 'gpt-4', label: 'GPT-4', category: 'text' },
-  { value: 'gpt-4-turbo', label: 'GPT-4 Turbo', category: 'text' },
-  { value: 'gpt-4o', label: 'GPT-4o', category: 'text' },
-  { value: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo', category: 'text' },
-  // Anthropic
-  { value: 'claude-3-opus', label: 'Claude 3 Opus', category: 'text' },
-  { value: 'claude-3-sonnet', label: 'Claude 3 Sonnet', category: 'text' },
-  { value: 'claude-3-haiku', label: 'Claude 3 Haiku', category: 'text' },
-  { value: 'claude-3.5-sonnet', label: 'Claude 3.5 Sonnet', category: 'text' },
-  // Google
-  { value: 'gemini-pro', label: 'Gemini Pro', category: 'text' },
-  { value: 'gemini-ultra', label: 'Gemini Ultra', category: 'text' },
-  { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash', category: 'text' },
-  // Open Source
-  { value: 'llama-3', label: 'Llama 3', category: 'text' },
+export const AI_MODELS: { value: AIModel; label: string; category: 'text' | 'image' | 'video' }[] = [
+  // Text Models
+  { value: 'chatgpt', label: 'ChatGPT', category: 'text' },
+  { value: 'claude', label: 'Claude', category: 'text' },
+  { value: 'gemini', label: 'Gemini', category: 'text' },
+  { value: 'copilot', label: 'Copilot', category: 'text' },
+  { value: 'perplexity', label: 'Perplexity', category: 'text' },
+  { value: 'llama', label: 'Llama', category: 'text' },
   { value: 'mistral', label: 'Mistral', category: 'text' },
+  { value: 'grok', label: 'Grok', category: 'text' },
   // Image Models
   { value: 'midjourney', label: 'Midjourney', category: 'image' },
-  { value: 'dall-e-3', label: 'DALL-E 3', category: 'image' },
+  { value: 'dall-e', label: 'DALL-E', category: 'image' },
   { value: 'stable-diffusion', label: 'Stable Diffusion', category: 'image' },
+  { value: 'ideogram', label: 'Ideogram', category: 'image' },
+  { value: 'flux', label: 'Flux', category: 'image' },
+  { value: 'leonardo', label: 'Leonardo', category: 'image' },
+  // Video Models
+  { value: 'google-veo', label: 'Google Veo', category: 'video' },
+  { value: 'runway', label: 'Runway', category: 'video' },
+  { value: 'pika', label: 'Pika', category: 'video' },
+  { value: 'sora', label: 'Sora', category: 'video' },
+  { value: 'kling', label: 'Kling', category: 'video' },
   // Other
   { value: 'other', label: 'Other', category: 'text' },
 ];

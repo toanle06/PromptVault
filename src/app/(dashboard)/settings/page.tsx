@@ -24,8 +24,86 @@ import {
   User,
   LogOut,
   Loader2,
+  Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
+
+// Sample data for developers
+const SEED_CATEGORIES = [
+  // Main Categories
+  { name: 'Mobile Development', color: '#3B82F6', icon: '📱', order: 0, promptCount: 0 },
+  { name: 'Web Development', color: '#10B981', icon: '🌐', order: 1, promptCount: 0 },
+  { name: 'Backend Development', color: '#8B5CF6', icon: '⚙️', order: 2, promptCount: 0 },
+  { name: 'AI & Machine Learning', color: '#F59E0B', icon: '🤖', order: 3, promptCount: 0 },
+  { name: 'DevOps & Cloud', color: '#EF4444', icon: '☁️', order: 4, promptCount: 0 },
+  { name: 'Database', color: '#06B6D4', icon: '🗄️', order: 5, promptCount: 0 },
+  { name: 'Testing & QA', color: '#84CC16', icon: '🧪', order: 6, promptCount: 0 },
+  { name: 'Image Generation', color: '#EC4899', icon: '🎨', order: 7, promptCount: 0 },
+  { name: 'Video Generation', color: '#F97316', icon: '🎬', order: 8, promptCount: 0 },
+  { name: 'Productivity', color: '#6366F1', icon: '⚡', order: 9, promptCount: 0 },
+];
+
+const SEED_TAGS = [
+  // Mobile
+  { name: 'Swift', color: '#F05138', usageCount: 0 },
+  { name: 'SwiftUI', color: '#0071E3', usageCount: 0 },
+  { name: 'iOS', color: '#000000', usageCount: 0 },
+  { name: 'Kotlin', color: '#7F52FF', usageCount: 0 },
+  { name: 'Android', color: '#3DDC84', usageCount: 0 },
+  { name: 'React Native', color: '#61DAFB', usageCount: 0 },
+  { name: 'Flutter', color: '#02569B', usageCount: 0 },
+  { name: 'Expo', color: '#000020', usageCount: 0 },
+  // Web Frontend
+  { name: 'React', color: '#61DAFB', usageCount: 0 },
+  { name: 'Next.js', color: '#000000', usageCount: 0 },
+  { name: 'Vue', color: '#4FC08D', usageCount: 0 },
+  { name: 'Angular', color: '#DD0031', usageCount: 0 },
+  { name: 'TypeScript', color: '#3178C6', usageCount: 0 },
+  { name: 'JavaScript', color: '#F7DF1E', usageCount: 0 },
+  { name: 'HTML/CSS', color: '#E34F26', usageCount: 0 },
+  { name: 'Tailwind', color: '#06B6D4', usageCount: 0 },
+  // Backend
+  { name: 'Node.js', color: '#339933', usageCount: 0 },
+  { name: 'Python', color: '#3776AB', usageCount: 0 },
+  { name: 'Go', color: '#00ADD8', usageCount: 0 },
+  { name: 'Rust', color: '#000000', usageCount: 0 },
+  { name: 'Java', color: '#007396', usageCount: 0 },
+  { name: 'C#', color: '#512BD4', usageCount: 0 },
+  { name: 'PHP', color: '#777BB4', usageCount: 0 },
+  { name: 'Ruby', color: '#CC342D', usageCount: 0 },
+  // Database
+  { name: 'PostgreSQL', color: '#4169E1', usageCount: 0 },
+  { name: 'MongoDB', color: '#47A248', usageCount: 0 },
+  { name: 'MySQL', color: '#4479A1', usageCount: 0 },
+  { name: 'Redis', color: '#DC382D', usageCount: 0 },
+  { name: 'Firebase', color: '#FFCA28', usageCount: 0 },
+  { name: 'Supabase', color: '#3ECF8E', usageCount: 0 },
+  // DevOps
+  { name: 'Docker', color: '#2496ED', usageCount: 0 },
+  { name: 'Kubernetes', color: '#326CE5', usageCount: 0 },
+  { name: 'AWS', color: '#FF9900', usageCount: 0 },
+  { name: 'GCP', color: '#4285F4', usageCount: 0 },
+  { name: 'Azure', color: '#0078D4', usageCount: 0 },
+  { name: 'CI/CD', color: '#40BE46', usageCount: 0 },
+  // AI/ML
+  { name: 'LLM', color: '#10A37F', usageCount: 0 },
+  { name: 'Prompt Engineering', color: '#8B5CF6', usageCount: 0 },
+  { name: 'RAG', color: '#F59E0B', usageCount: 0 },
+  { name: 'Fine-tuning', color: '#EF4444', usageCount: 0 },
+  // Image/Video
+  { name: 'Image Prompt', color: '#EC4899', usageCount: 0 },
+  { name: 'Video Prompt', color: '#F97316', usageCount: 0 },
+  { name: 'Style Transfer', color: '#A855F7', usageCount: 0 },
+  // General
+  { name: 'Code Review', color: '#6366F1', usageCount: 0 },
+  { name: 'Debugging', color: '#EF4444', usageCount: 0 },
+  { name: 'Refactoring', color: '#14B8A6', usageCount: 0 },
+  { name: 'Documentation', color: '#64748B', usageCount: 0 },
+  { name: 'API Design', color: '#8B5CF6', usageCount: 0 },
+  { name: 'Architecture', color: '#0EA5E9', usageCount: 0 },
+  { name: 'Performance', color: '#22C55E', usageCount: 0 },
+  { name: 'Security', color: '#DC2626', usageCount: 0 },
+];
 
 export default function SettingsPage() {
   const { user, userData } = useAuthStore();
@@ -38,6 +116,7 @@ export default function SettingsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [isSeeding, setIsSeeding] = useState(false);
 
   const handleExport = async () => {
     if (!user) return;
@@ -117,6 +196,33 @@ export default function SettingsPage() {
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
+    }
+  };
+
+  const handleSeedData = async () => {
+    if (!user) return;
+
+    // Check if data already exists
+    if (categories.length > 0 || tags.length > 0) {
+      const confirmed = window.confirm(
+        'You already have categories/tags. This will add sample data without removing existing data. Continue?'
+      );
+      if (!confirmed) return;
+    }
+
+    setIsSeeding(true);
+    try {
+      // Import categories
+      await importCategories(SEED_CATEGORIES);
+      // Import tags
+      await importTags(SEED_TAGS);
+
+      toast.success(`Created ${SEED_CATEGORIES.length} categories and ${SEED_TAGS.length} tags`);
+    } catch (error) {
+      console.error('Seed error:', error);
+      toast.error('Failed to create sample data');
+    } finally {
+      setIsSeeding(false);
     }
   };
 
@@ -280,6 +386,30 @@ export default function SettingsPage() {
                 Import
               </Button>
             </div>
+          </div>
+
+          <Separator />
+
+          {/* Seed Sample Data */}
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium">Sample Data for Developers</p>
+              <p className="text-sm text-muted-foreground">
+                Create categories & tags for programming (Swift, React, Kotlin, etc.)
+              </p>
+            </div>
+            <Button
+              variant="secondary"
+              onClick={handleSeedData}
+              disabled={isSeeding}
+            >
+              {isSeeding ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="mr-2 h-4 w-4" />
+              )}
+              Generate
+            </Button>
           </div>
         </CardContent>
       </Card>
