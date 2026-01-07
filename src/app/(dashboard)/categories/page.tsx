@@ -37,6 +37,7 @@ import { usePrompts } from '@/hooks/use-prompts';
 import type { Category } from '@/types';
 import { Plus, Edit, Trash2, FolderOpen, Loader2, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 const COLORS = [
   '#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16',
@@ -52,18 +53,20 @@ export default function CategoriesPage() {
   const [showDialog, setShowDialog] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
+  const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
 
   // Form state
   const [name, setName] = useState('');
   const [color, setColor] = useState(COLORS[0]);
-  const [parentId, setParentId] = useState<string>('');
+  const [parentId, setParentId] = useState<string>('none');
 
   const resetForm = () => {
     setName('');
     setColor(COLORS[0]);
-    setParentId('');
+    setParentId('none');
     setEditingCategory(null);
   };
 
@@ -72,7 +75,7 @@ export default function CategoriesPage() {
       setEditingCategory(category);
       setName(category.name);
       setColor(category.color || COLORS[0]);
-      setParentId(category.parentId || '');
+      setParentId(category.parentId || 'none');
     } else {
       resetForm();
     }
@@ -88,12 +91,23 @@ export default function CategoriesPage() {
     e.preventDefault();
     if (!name.trim()) return;
 
+    // Check for duplicate name (case-insensitive)
+    const trimmedName = name.trim().toLowerCase();
+    const existingCategory = categories.find(
+      (c) => c.name.toLowerCase() === trimmedName && c.id !== editingCategory?.id
+    );
+
+    if (existingCategory) {
+      toast.error(`Category "${name.trim()}" already exists`);
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const data = {
         name: name.trim(),
         color,
-        parentId: parentId || undefined,
+        parentId: parentId === 'none' ? undefined : parentId,
         order: editingCategory?.order ?? categories.length,
       };
 
@@ -117,6 +131,23 @@ export default function CategoriesPage() {
     } finally {
       setIsDeleting(false);
       setCategoryToDelete(null);
+    }
+  };
+
+  const handleDeleteAll = async () => {
+    setIsDeletingAll(true);
+    try {
+      // Delete all categories one by one
+      for (const category of categories) {
+        await deleteCategory(category.id);
+      }
+      toast.success(`Deleted ${categories.length} categories`);
+    } catch (error) {
+      console.error('Delete all error:', error);
+      toast.error('Failed to delete all categories');
+    } finally {
+      setIsDeletingAll(false);
+      setShowDeleteAllDialog(false);
     }
   };
 
@@ -152,10 +183,22 @@ export default function CategoriesPage() {
             Organize your prompts with categories and subcategories
           </p>
         </div>
-        <Button onClick={() => handleOpenDialog()}>
-          <Plus className="mr-2 h-4 w-4" />
-          New Category
-        </Button>
+        <div className="flex items-center gap-2">
+          {categories.length > 0 && (
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteAllDialog(true)}
+              className="text-destructive hover:text-destructive"
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete All
+            </Button>
+          )}
+          <Button onClick={() => handleOpenDialog()}>
+            <Plus className="mr-2 h-4 w-4" />
+            New Category
+          </Button>
+        </div>
       </div>
 
       {/* Categories List */}
@@ -298,7 +341,7 @@ export default function CategoriesPage() {
                   <SelectValue placeholder="No parent (main category)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No parent (main category)</SelectItem>
+                  <SelectItem value="none">No parent (main category)</SelectItem>
                   {categoriesTree.main
                     .filter((c) => c.id !== editingCategory?.id)
                     .map((c) => (
@@ -368,6 +411,34 @@ export default function CategoriesPage() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {isDeleting ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete All Confirmation */}
+      <AlertDialog
+        open={showDeleteAllDialog}
+        onOpenChange={setShowDeleteAllDialog}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete All Categories</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete all {categories.length} categories?
+              <span className="block mt-2 text-destructive">
+                This action cannot be undone. All prompts will become uncategorized.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingAll}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteAll}
+              disabled={isDeletingAll}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeletingAll ? 'Deleting...' : 'Delete All'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

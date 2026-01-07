@@ -30,6 +30,7 @@ import { usePrompts } from '@/hooks/use-prompts';
 import type { Tag, TagFormData } from '@/types';
 import { Plus, Edit, Trash2, Tags, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 const COLORS = [
   '#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16',
@@ -45,8 +46,10 @@ export default function TagsPage() {
   const [showDialog, setShowDialog] = useState(false);
   const [editingTag, setEditingTag] = useState<Tag | null>(null);
   const [tagToDelete, setTagToDelete] = useState<Tag | null>(null);
+  const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
 
   // Form state
   const [name, setName] = useState('');
@@ -78,6 +81,17 @@ export default function TagsPage() {
     e.preventDefault();
     if (!name.trim()) return;
 
+    // Check for duplicate name (case-insensitive)
+    const trimmedName = name.trim().toLowerCase();
+    const existingTag = tags.find(
+      (t) => t.name.toLowerCase() === trimmedName && t.id !== editingTag?.id
+    );
+
+    if (existingTag) {
+      toast.error(`Tag "${name.trim()}" already exists`);
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const data: TagFormData = {
@@ -105,6 +119,23 @@ export default function TagsPage() {
     } finally {
       setIsDeleting(false);
       setTagToDelete(null);
+    }
+  };
+
+  const handleDeleteAll = async () => {
+    setIsDeletingAll(true);
+    try {
+      // Delete all tags one by one
+      for (const tag of tags) {
+        await deleteTag(tag.id);
+      }
+      toast.success(`Deleted ${tags.length} tags`);
+    } catch (error) {
+      console.error('Delete all error:', error);
+      toast.error('Failed to delete all tags');
+    } finally {
+      setIsDeletingAll(false);
+      setShowDeleteAllDialog(false);
     }
   };
 
@@ -142,10 +173,22 @@ export default function TagsPage() {
             Create tags to categorize and filter your prompts
           </p>
         </div>
-        <Button onClick={() => handleOpenDialog()}>
-          <Plus className="mr-2 h-4 w-4" />
-          New Tag
-        </Button>
+        <div className="flex items-center gap-2">
+          {tags.length > 0 && (
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteAllDialog(true)}
+              className="text-destructive hover:text-destructive"
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete All
+            </Button>
+          )}
+          <Button onClick={() => handleOpenDialog()}>
+            <Plus className="mr-2 h-4 w-4" />
+            New Tag
+          </Button>
+        </div>
       </div>
 
       {/* Tags List */}
@@ -309,6 +352,34 @@ export default function TagsPage() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {isDeleting ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete All Confirmation */}
+      <AlertDialog
+        open={showDeleteAllDialog}
+        onOpenChange={setShowDeleteAllDialog}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete All Tags</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete all {tags.length} tags?
+              <span className="block mt-2 text-destructive">
+                This action cannot be undone. All tags will be removed from prompts.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingAll}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteAll}
+              disabled={isDeletingAll}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeletingAll ? 'Deleting...' : 'Delete All'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
