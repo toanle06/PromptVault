@@ -32,8 +32,13 @@ export function useAuth() {
       setUser(firebaseUser);
 
       if (firebaseUser) {
-        const data = await getUserData(firebaseUser.uid);
-        setUserData(data);
+        try {
+          const data = await getUserData(firebaseUser.uid);
+          setUserData(data);
+        } catch (error) {
+          console.error('Failed to fetch user data:', error);
+          // Don't block auth, just leave userData as null for now
+        }
       } else {
         setUserData(null);
       }

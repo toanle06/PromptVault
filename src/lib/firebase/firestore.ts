@@ -48,8 +48,9 @@ const getUserCollection = (userId: string, collectionName: string) =>
 
 export async function getPrompts(userId: string): Promise<Prompt[]> {
   const promptsRef = getUserCollection(userId, 'prompts');
-  const q = query(promptsRef, orderBy('createdAt', 'desc'));
-  const snapshot = await getDocs(q);
+  // Don't use orderBy to avoid issues with null timestamps from latency compensation
+  // Sort will be handled client-side
+  const snapshot = await getDocs(promptsRef);
   return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Prompt));
 }
 
@@ -236,37 +237,52 @@ export function subscribeToPrompts(
   callback: (prompts: Prompt[]) => void,
   onError?: (error: Error) => void
 ): Unsubscribe {
-  const promptsRef = getUserCollection(userId, 'prompts');
-  const q = query(promptsRef, orderBy('createdAt', 'desc'));
+  console.log('[subscribeToPrompts] Starting subscription for user:', userId);
 
-  return onSnapshot(
-    q,
-    (snapshot) => {
-      const prompts = snapshot.docs.map((doc) => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          ...data,
-          // Safety defaults for required fields that might be missing in older data
-          tags: data.tags || [],
-          usageCount: data.usageCount || 0,
-          isFavorite: data.isFavorite || false,
-          isPinned: data.isPinned || false,
-          isDeleted: data.isDeleted || false,
-          // Handle timestamps that might be null (latency compensation)
-          createdAt: data.createdAt,
-          updatedAt: data.updatedAt,
-        } as Prompt;
-      });
-      callback(prompts);
-    },
-    (error) => {
-      console.error('Error subscribing to prompts:', error);
-      // Still call callback with empty array to stop loading state
-      callback([]);
-      onError?.(error);
-    }
-  );
+  try {
+    const promptsRef = getUserCollection(userId, 'prompts');
+    // Don't use orderBy to avoid issues with null timestamps from latency compensation
+    // Sort will be handled client-side in the store
+    const q = query(promptsRef);
+
+    console.log('[subscribeToPrompts] Query created, attaching listener');
+
+    return onSnapshot(
+      q,
+      (snapshot) => {
+        console.log('[subscribeToPrompts] Received snapshot with', snapshot.docs.length, 'docs');
+        const prompts = snapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            // Safety defaults for required fields that might be missing in older data
+            tags: data.tags || [],
+            usageCount: data.usageCount || 0,
+            isFavorite: data.isFavorite || false,
+            isPinned: data.isPinned || false,
+            isDeleted: data.isDeleted || false,
+            // Handle timestamps that might be null (latency compensation)
+            createdAt: data.createdAt,
+            updatedAt: data.updatedAt,
+          } as Prompt;
+        });
+        callback(prompts);
+      },
+      (error) => {
+        console.error('[subscribeToPrompts] Subscription error:', error);
+        // Still call callback with empty array to stop loading state
+        callback([]);
+        onError?.(error);
+      }
+    );
+  } catch (error) {
+    console.error('[subscribeToPrompts] Failed to create subscription:', error);
+    callback([]);
+    onError?.(error instanceof Error ? error : new Error('Unknown subscription error'));
+    // Return a no-op unsubscribe function
+    return () => {};
+  }
 }
 
 // ========================

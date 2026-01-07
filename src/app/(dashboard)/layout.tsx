@@ -7,6 +7,7 @@ import { AppSidebar } from '@/components/layout/app-sidebar';
 import { Header } from '@/components/layout/header';
 import { CreatePromptDialog } from '@/components/prompts/create-prompt-dialog';
 import { KeyboardShortcutsDialog } from '@/components/keyboard-shortcuts-dialog';
+import { PromptSubscriptionManager } from '@/components/providers/prompt-provider';
 import { useAuth } from '@/hooks/use-auth';
 import { useKeyboardShortcuts } from '@/hooks/use-keyboard-shortcuts';
 import { Loader2 } from 'lucide-react';
@@ -52,6 +53,7 @@ export default function DashboardLayout({
           {children}
         </main>
       </SidebarInset>
+      <PromptSubscriptionManager />
       <CreatePromptDialog />
       <KeyboardShortcutsDialog />
     </SidebarProvider>

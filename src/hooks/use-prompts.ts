@@ -26,6 +26,7 @@ import {
 import type { PromptFormData, Prompt, BulkAction, PromptVersion, BulkOperationResult } from '@/types';
 import { toast } from 'sonner';
 
+// Global subscription - persists across component mounts/unmounts
 export function usePrompts() {
   const { user } = useAuthStore();
   const {
@@ -43,31 +44,8 @@ export function usePrompts() {
     setError,
   } = usePromptStore();
 
-  // Subscribe to prompts
-  useEffect(() => {
-    if (!user?.uid) {
-      setPrompts([]);
-      return;
-    }
-
-    setLoading(true);
-    // Reset error before trying to fetch
-    setError(null);
-
-    const unsubscribe = subscribeToPrompts(
-      user.uid,
-      (newPrompts) => {
-        setPrompts(newPrompts);
-      },
-      (err) => {
-        console.error('Failed to subscribe to prompts:', err);
-        setError(err.message);
-        setLoading(false);
-      }
-    );
-
-    return () => unsubscribe();
-  }, [user?.uid, setPrompts, setLoading, setError]);
+  // Subscription is now handled by PromptSubscriptionManager in the layout
+  // We just return the data from the store
 
   // Create prompt
   const createPrompt = useCallback(

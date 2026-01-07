@@ -94,10 +94,11 @@ export const usePromptStore = create<PromptState>()((set, get) => ({
 
   // Computed
   getFilteredPrompts: () => {
-    const { prompts, filters, sortOptions } = get();
+    try {
+      const { prompts, filters, sortOptions } = get();
 
-    // First, filter out deleted prompts (unless we're viewing trash)
-    let filtered = prompts.filter((p) => !p.isDeleted);
+      // First, filter out deleted prompts (unless we're viewing trash)
+      let filtered = prompts.filter((p) => !p.isDeleted);
 
     // Apply filters
     if (filters.categoryId) {
@@ -168,7 +169,11 @@ export const usePromptStore = create<PromptState>()((set, get) => ({
       return sortOptions.direction === 'asc' ? comparison : -comparison;
     });
 
-    return filtered;
+      return filtered;
+    } catch (error) {
+      console.error('Error filtering prompts:', error);
+      return [];
+    }
   },
 
   getCategoryById: (id) => get().categories.find((c) => c.id === id),
