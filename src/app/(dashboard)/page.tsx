@@ -61,6 +61,7 @@ export default function DashboardPage() {
   ];
 
   const isLoading = isLoadingPrompts || isLoadingCategories || isLoadingTags;
+  const { error } = usePrompts();
 
   return (
     <div className="space-y-6">
@@ -77,6 +78,17 @@ export default function DashboardPage() {
           New Prompt
         </Button>
       </div>
+
+      {error ? (
+        <div className="bg-destructive/15 text-destructive p-4 rounded-md border border-destructive/20 mb-6">
+          <h3 className="font-medium text-lg mb-1">Error Loading Data</h3>
+          <p className="mb-2">{error}</p>
+          <p className="text-sm opacity-80">
+            This often happens if the required Firestore index is missing. Check the browser console
+            for a direct link to create the index in the Firebase Console.
+          </p>
+        </div>
+      ) : null}
 
       {/* Stats */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

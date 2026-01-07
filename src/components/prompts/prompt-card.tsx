@@ -154,179 +154,179 @@ export function PromptCard({
                 {prompt.title}
               </h3>
             </div>
-              <div className="flex flex-wrap gap-1 mt-1">
-                {isTemplate && (
-                  <Badge
-                    variant="secondary"
-                    className="text-xs bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
-                  >
-                    <Variable className="mr-1 h-3 w-3" />
-                    Template
-                  </Badge>
-                )}
-                {category && (
-                  <Badge
-                    variant="secondary"
-                    style={{
-                      backgroundColor: category.color ? `${category.color}20` : undefined,
-                      color: category.color || undefined,
-                      borderColor: category.color || undefined,
-                    }}
-                  >
-                    {category.name}
-                  </Badge>
-                )}
-              </div>
-            </div>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild onClick={(e) => e.preventDefault()}>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={handlePin}>
-                  {prompt.isPinned ? (
-                    <>
-                      <PinOff className="mr-2 h-4 w-4" />
-                      Unpin
-                    </>
-                  ) : (
-                    <>
-                      <Pin className="mr-2 h-4 w-4" />
-                      Pin
-                    </>
-                  )}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleDuplicate}>
-                  <CopyIcon className="mr-2 h-4 w-4" />
-                  Duplicate
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleExport}>
-                  <Download className="mr-2 h-4 w-4" />
-                  Export
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleEdit}>
-                  <Edit className="mr-2 h-4 w-4" />
-                  Edit
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={handleDelete}
-                  className="text-destructive"
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Move to Trash
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </CardHeader>
-
-        <CardContent className="pb-2">
-          <p className="text-sm text-muted-foreground line-clamp-3">
-            {prompt.content}
-          </p>
-
-          <div className="flex flex-wrap gap-1 mt-2">
-            {expertRole && (
-              <Badge variant="outline">
-                {expertRole.name}
-              </Badge>
-            )}
-            {prompt.compatibleModels && prompt.compatibleModels.length > 0 && (
-              <>
-                {prompt.compatibleModels.slice(0, 2).map((modelValue) => {
-                  const model = AI_MODELS.find((m) => m.value === modelValue);
-                  if (!model) return null;
-                  return (
-                    <Badge
-                      key={modelValue}
-                      variant="outline"
-                      className="text-xs bg-muted/50"
-                    >
-                      <Bot className="mr-1 h-3 w-3" />
-                      {model.label}
-                    </Badge>
-                  );
-                })}
-                {prompt.compatibleModels.length > 2 && (
-                  <Badge variant="outline" className="text-xs">
-                    +{prompt.compatibleModels.length - 2}
-                  </Badge>
-                )}
-              </>
-            )}
-          </div>
-        </CardContent>
-
-        <CardFooter className="pt-2 flex items-center justify-between">
-          <div className="flex flex-wrap gap-1">
-            {prompt.tags.slice(0, 3).map((tagId) => {
-              const tag = getTagById(tagId);
-              if (!tag) return null;
-              return (
+            <div className="flex flex-wrap gap-1 mt-1">
+              {isTemplate && (
                 <Badge
-                  key={tagId}
-                  variant="outline"
-                  className="text-xs"
+                  variant="secondary"
+                  className="text-xs bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
+                >
+                  <Variable className="mr-1 h-3 w-3" />
+                  Template
+                </Badge>
+              )}
+              {category && (
+                <Badge
+                  variant="secondary"
                   style={{
-                    borderColor: tag.color || undefined,
-                    color: tag.color || undefined,
+                    backgroundColor: category.color ? `${category.color}20` : undefined,
+                    color: category.color || undefined,
+                    borderColor: category.color || undefined,
                   }}
                 >
-                  {tag.name}
+                  {category.name}
                 </Badge>
-              );
-            })}
-            {prompt.tags.length > 3 && (
-              <Badge variant="outline" className="text-xs">
-                +{prompt.tags.length - 3}
-              </Badge>
-            )}
-          </div>
-
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={handleFavorite}
-            >
-              <Star
-                className={cn(
-                  'h-4 w-4',
-                  prompt.isFavorite && 'fill-yellow-500 text-yellow-500'
-                )}
-              />
-            </Button>
-
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={handleCopy}
-            >
-              {isCopied ? (
-                <Check className="h-4 w-4 text-green-500" />
-              ) : (
-                <Copy className="h-4 w-4" />
               )}
-            </Button>
+            </div>
           </div>
-        </CardFooter>
 
-        <div className="px-6 pb-3">
-          <p className="text-xs text-muted-foreground">
-            {formatDistanceToNow(createdAt, { addSuffix: true })}
-            {prompt.usageCount > 0 && ` • Used ${prompt.usageCount} times`}
-          </p>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild onClick={(e) => e.preventDefault()}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handlePin}>
+                {prompt.isPinned ? (
+                  <>
+                    <PinOff className="mr-2 h-4 w-4" />
+                    Unpin
+                  </>
+                ) : (
+                  <>
+                    <Pin className="mr-2 h-4 w-4" />
+                    Pin
+                  </>
+                )}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleDuplicate}>
+                <CopyIcon className="mr-2 h-4 w-4" />
+                Duplicate
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExport}>
+                <Download className="mr-2 h-4 w-4" />
+                Export
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleEdit}>
+                <Edit className="mr-2 h-4 w-4" />
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={handleDelete}
+                className="text-destructive"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Move to Trash
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-      </Card>
+      </CardHeader>
+
+      <CardContent className="pb-2">
+        <p className="text-sm text-muted-foreground line-clamp-3">
+          {prompt.content}
+        </p>
+
+        <div className="flex flex-wrap gap-1 mt-2">
+          {expertRole && (
+            <Badge variant="outline">
+              {expertRole.name}
+            </Badge>
+          )}
+          {prompt.compatibleModels && prompt.compatibleModels.length > 0 && (
+            <>
+              {prompt.compatibleModels.slice(0, 2).map((modelValue) => {
+                const model = AI_MODELS.find((m) => m.value === modelValue);
+                if (!model) return null;
+                return (
+                  <Badge
+                    key={modelValue}
+                    variant="outline"
+                    className="text-xs bg-muted/50"
+                  >
+                    <Bot className="mr-1 h-3 w-3" />
+                    {model.label}
+                  </Badge>
+                );
+              })}
+              {prompt.compatibleModels.length > 2 && (
+                <Badge variant="outline" className="text-xs">
+                  +{prompt.compatibleModels.length - 2}
+                </Badge>
+              )}
+            </>
+          )}
+        </div>
+      </CardContent>
+
+      <CardFooter className="pt-2 flex items-center justify-between">
+        <div className="flex flex-wrap gap-1">
+          {(prompt.tags || []).slice(0, 3).map((tagId) => {
+            const tag = getTagById(tagId);
+            if (!tag) return null;
+            return (
+              <Badge
+                key={tagId}
+                variant="outline"
+                className="text-xs"
+                style={{
+                  borderColor: tag.color || undefined,
+                  color: tag.color || undefined,
+                }}
+              >
+                {tag.name}
+              </Badge>
+            );
+          })}
+          {(prompt.tags?.length || 0) > 3 && (
+            <Badge variant="outline" className="text-xs">
+              +{(prompt.tags?.length || 0) - 3}
+            </Badge>
+          )}
+        </div>
+
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={handleFavorite}
+          >
+            <Star
+              className={cn(
+                'h-4 w-4',
+                prompt.isFavorite && 'fill-yellow-500 text-yellow-500'
+              )}
+            />
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={handleCopy}
+          >
+            {isCopied ? (
+              <Check className="h-4 w-4 text-green-500" />
+            ) : (
+              <Copy className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
+      </CardFooter>
+
+      <div className="px-6 pb-3">
+        <p className="text-xs text-muted-foreground">
+          {formatDistanceToNow(createdAt, { addSuffix: true })}
+          {prompt.usageCount > 0 && ` • Used ${prompt.usageCount} times`}
+        </p>
+      </div>
+    </Card>
   );
 
   // In selection mode, don't wrap with Link

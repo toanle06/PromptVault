@@ -87,8 +87,9 @@ export interface Prompt {
   deletedAt?: Timestamp;
   // Sprint 2: Version history
   version?: number;
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
+  // Note: These can be null during latency compensation (before server confirmation)
+  createdAt: Timestamp | null;
+  updatedAt: Timestamp | null;
 }
 
 // Sprint 2: Version History Types

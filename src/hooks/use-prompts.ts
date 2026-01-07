@@ -39,6 +39,8 @@ export function usePrompts() {
     clearFilters,
     sortOptions,
     setSortOptions,
+    error,
+    setError,
   } = usePromptStore();
 
   // Subscribe to prompts
@@ -49,12 +51,23 @@ export function usePrompts() {
     }
 
     setLoading(true);
-    const unsubscribe = subscribeToPrompts(user.uid, (newPrompts) => {
-      setPrompts(newPrompts);
-    });
+    // Reset error before trying to fetch
+    setError(null);
+
+    const unsubscribe = subscribeToPrompts(
+      user.uid,
+      (newPrompts) => {
+        setPrompts(newPrompts);
+      },
+      (err) => {
+        console.error('Failed to subscribe to prompts:', err);
+        setError(err.message);
+        setLoading(false);
+      }
+    );
 
     return () => unsubscribe();
-  }, [user?.uid, setPrompts, setLoading]);
+  }, [user?.uid, setPrompts, setLoading, setError]);
 
   // Create prompt
   const createPrompt = useCallback(
@@ -384,5 +397,6 @@ export function usePrompts() {
     getPromptVersions,
     restoreVersion,
     bulkOperation,
+    error,
   };
 }

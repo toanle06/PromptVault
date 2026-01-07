@@ -17,6 +17,7 @@ interface PromptState {
   isLoading: boolean;
   isLoadingCategories: boolean;
   isLoadingTags: boolean;
+  error: string | null;
 
   // Actions - Data
   setPrompts: (prompts: Prompt[]) => void;
@@ -33,6 +34,7 @@ interface PromptState {
   setLoading: (loading: boolean) => void;
   setLoadingCategories: (loading: boolean) => void;
   setLoadingTags: (loading: boolean) => void;
+  setError: (error: string | null) => void;
 
   // Computed
   getFilteredPrompts: () => Prompt[];
@@ -68,6 +70,7 @@ export const usePromptStore = create<PromptState>()((set, get) => ({
   isLoading: true,
   isLoadingCategories: true,
   isLoadingTags: true,
+  error: null,
 
   // Actions - Data
   setPrompts: (prompts) => set({ prompts, isLoading: false }),
@@ -87,6 +90,7 @@ export const usePromptStore = create<PromptState>()((set, get) => ({
   setLoading: (isLoading) => set({ isLoading }),
   setLoadingCategories: (isLoadingCategories) => set({ isLoadingCategories }),
   setLoadingTags: (isLoadingTags) => set({ isLoadingTags }),
+  setError: (error) => set({ error }),
 
   // Computed
   getFilteredPrompts: () => {
@@ -108,7 +112,7 @@ export const usePromptStore = create<PromptState>()((set, get) => ({
 
     if (filters.tags && filters.tags.length > 0) {
       filtered = filtered.filter((p) =>
-        filters.tags!.some((tag) => p.tags.includes(tag))
+        filters.tags!.some((tag) => p.tags?.includes(tag))
       );
     }
 
@@ -144,12 +148,16 @@ export const usePromptStore = create<PromptState>()((set, get) => ({
       const bVal = b[sortOptions.field];
 
       if (sortOptions.field === 'title') {
-        const comparison = (aVal as string).localeCompare(bVal as string);
+        const aStr = typeof aVal === 'string' ? aVal : '';
+        const bStr = typeof bVal === 'string' ? bVal : '';
+        const comparison = aStr.localeCompare(bStr);
         return sortOptions.direction === 'asc' ? comparison : -comparison;
       }
 
       if (sortOptions.field === 'usageCount') {
-        const comparison = (aVal as number) - (bVal as number);
+        const aNum = typeof aVal === 'number' ? aVal : 0;
+        const bNum = typeof bVal === 'number' ? bVal : 0;
+        const comparison = aNum - bNum;
         return sortOptions.direction === 'asc' ? comparison : -comparison;
       }
 

@@ -242,7 +242,22 @@ export function subscribeToPrompts(
   return onSnapshot(
     q,
     (snapshot) => {
-      const prompts = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Prompt));
+      const prompts = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          // Safety defaults for required fields that might be missing in older data
+          tags: data.tags || [],
+          usageCount: data.usageCount || 0,
+          isFavorite: data.isFavorite || false,
+          isPinned: data.isPinned || false,
+          isDeleted: data.isDeleted || false,
+          // Handle timestamps that might be null (latency compensation)
+          createdAt: data.createdAt,
+          updatedAt: data.updatedAt,
+        } as Prompt;
+      });
       callback(prompts);
     },
     (error) => {
@@ -365,7 +380,7 @@ export async function createAttachment(
   const attachmentRef = doc(getDb(), 'users', userId, 'prompts', promptId, 'attachments', attachmentId);
   await updateDoc(doc(getDb(), 'users', userId, 'prompts', promptId), {
     updatedAt: serverTimestamp(),
-  }).catch(() => {});
+  }).catch(() => { });
 
   const attachmentsRef = collection(getDb(), 'users', userId, 'prompts', promptId, 'attachments');
   const attachmentDocRef = doc(attachmentsRef, attachmentId);
@@ -395,7 +410,7 @@ export async function createAttachmentWithId(
   // Update prompt's updatedAt
   await updateDoc(doc(getDb(), 'users', userId, 'prompts', promptId), {
     updatedAt: serverTimestamp(),
-  }).catch(() => {});
+  }).catch(() => { });
 }
 
 // Delete an attachment record
@@ -410,7 +425,7 @@ export async function deleteAttachment(
   // Update prompt's updatedAt
   await updateDoc(doc(getDb(), 'users', userId, 'prompts', promptId), {
     updatedAt: serverTimestamp(),
-  }).catch(() => {});
+  }).catch(() => { });
 }
 
 // Update attachment order
