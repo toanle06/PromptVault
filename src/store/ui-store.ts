@@ -26,6 +26,7 @@ interface UIState {
   isCreatePromptOpen: boolean;
   isEditPromptOpen: boolean;
   isDeleteDialogOpen: boolean;
+  isShortcutsHelpOpen: boolean;
 
   // Actions - Sidebar
   setSidebarOpen: (open: boolean) => void;
@@ -50,6 +51,7 @@ interface UIState {
   setCreatePromptOpen: (open: boolean) => void;
   setEditPromptOpen: (open: boolean) => void;
   setDeleteDialogOpen: (open: boolean) => void;
+  setShortcutsHelpOpen: (open: boolean) => void;
 }
 
 export const useUIStore = create<UIState>()(
@@ -66,6 +68,7 @@ export const useUIStore = create<UIState>()(
       isCreatePromptOpen: false,
       isEditPromptOpen: false,
       isDeleteDialogOpen: false,
+      isShortcutsHelpOpen: false,
 
       // Actions - Sidebar
       setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
@@ -90,6 +93,7 @@ export const useUIStore = create<UIState>()(
       setCreatePromptOpen: (isCreatePromptOpen) => set({ isCreatePromptOpen }),
       setEditPromptOpen: (isEditPromptOpen) => set({ isEditPromptOpen }),
       setDeleteDialogOpen: (isDeleteDialogOpen) => set({ isDeleteDialogOpen }),
+      setShortcutsHelpOpen: (isShortcutsHelpOpen) => set({ isShortcutsHelpOpen }),
     }),
     {
       name: 'promptvault-ui',

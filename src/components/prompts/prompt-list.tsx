@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -22,23 +22,54 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { PromptCard } from './prompt-card';
+import { BulkSelectionBar } from './bulk-selection-bar';
 import { usePrompts } from '@/hooks/use-prompts';
 import { useUIStore } from '@/store/ui-store';
 import type { Prompt, SortOptions } from '@/types';
-import { LayoutGrid, List, Plus, FileText } from 'lucide-react';
+import { LayoutGrid, List, Plus, FileText, CheckSquare, Square } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface PromptListProps {
   prompts: Prompt[];
   isLoading?: boolean;
+  isTrashView?: boolean;
 }
 
-export function PromptList({ prompts, isLoading }: PromptListProps) {
+export function PromptList({ prompts, isLoading, isTrashView = false }: PromptListProps) {
   const router = useRouter();
   const { deletePrompt, sortOptions, setSortOptions } = usePrompts();
   const { viewMode, setViewMode, setCreatePromptOpen } = useUIStore();
   const [promptToDelete, setPromptToDelete] = useState<Prompt | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Bulk selection state
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  const handleSelectionChange = useCallback((promptId: string, selected: boolean) => {
+    setSelectedIds((prev) =>
+      selected ? [...prev, promptId] : prev.filter((id) => id !== promptId)
+    );
+  }, []);
+
+  const handleClearSelection = useCallback(() => {
+    setSelectedIds([]);
+    setIsSelectionMode(false);
+  }, []);
+
+  const handleSelectAll = useCallback(() => {
+    setSelectedIds(prompts.map((p) => p.id));
+  }, [prompts]);
+
+  const toggleSelectionMode = useCallback(() => {
+    setIsSelectionMode((prev) => {
+      if (prev) {
+        // Exiting selection mode, clear selections
+        setSelectedIds([]);
+      }
+      return !prev;
+    });
+  }, []);
 
   const handleEdit = (prompt: Prompt) => {
     router.push(`/prompts/${prompt.id}?edit=true`);
@@ -94,6 +125,26 @@ export function PromptList({ prompts, isLoading }: PromptListProps) {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Selection Mode Toggle */}
+          <Button
+            variant={isSelectionMode ? 'secondary' : 'outline'}
+            size="sm"
+            onClick={toggleSelectionMode}
+            className="gap-1"
+          >
+            {isSelectionMode ? (
+              <>
+                <CheckSquare className="h-4 w-4" />
+                Cancel
+              </>
+            ) : (
+              <>
+                <Square className="h-4 w-4" />
+                Select
+              </>
+            )}
+          </Button>
+
           {/* Sort */}
           <Select
             value={`${sortOptions.field}-${sortOptions.direction}`}
@@ -140,6 +191,17 @@ export function PromptList({ prompts, isLoading }: PromptListProps) {
         </div>
       </div>
 
+      {/* Bulk Selection Bar */}
+      {isSelectionMode && selectedIds.length > 0 && (
+        <BulkSelectionBar
+          selectedIds={selectedIds}
+          onClearSelection={handleClearSelection}
+          onSelectAll={handleSelectAll}
+          totalCount={prompts.length}
+          isTrashView={isTrashView}
+        />
+      )}
+
       {/* Prompts Grid/List */}
       {prompts.length > 0 ? (
         <div className={cn(
@@ -152,6 +214,9 @@ export function PromptList({ prompts, isLoading }: PromptListProps) {
               prompt={prompt}
               onEdit={handleEdit}
               onDelete={setPromptToDelete}
+              isSelectionMode={isSelectionMode}
+              isSelected={selectedIds.includes(prompt.id)}
+              onSelectionChange={handleSelectionChange}
             />
           ))}
         </div>

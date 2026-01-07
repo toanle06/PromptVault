@@ -6,7 +6,9 @@ import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/layout/app-sidebar';
 import { Header } from '@/components/layout/header';
 import { CreatePromptDialog } from '@/components/prompts/create-prompt-dialog';
+import { KeyboardShortcutsDialog } from '@/components/keyboard-shortcuts-dialog';
 import { useAuth } from '@/hooks/use-auth';
+import { useKeyboardShortcuts } from '@/hooks/use-keyboard-shortcuts';
 import { Loader2 } from 'lucide-react';
 
 export default function DashboardLayout({
@@ -16,6 +18,9 @@ export default function DashboardLayout({
 }) {
   const router = useRouter();
   const { isAuthenticated, isLoading } = useAuth();
+
+  // Initialize keyboard shortcuts
+  useKeyboardShortcuts({ enabled: isAuthenticated });
 
   // Redirect to login if not authenticated (after loading is complete)
   useEffect(() => {
@@ -48,6 +53,7 @@ export default function DashboardLayout({
         </main>
       </SidebarInset>
       <CreatePromptDialog />
+      <KeyboardShortcutsDialog />
     </SidebarProvider>
   );
 }

@@ -31,9 +31,16 @@ import {
   Check,
   Calendar,
   BarChart3,
+  Pin,
+  PinOff,
+  Copy as CopyIcon,
+  Bot,
+  History,
 } from 'lucide-react';
+import { AI_MODELS } from '@/types';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow, format } from 'date-fns';
+import { VersionHistoryDialog } from '@/components/prompts/version-history-dialog';
 
 export default function PromptDetailPage() {
   const params = useParams();
@@ -42,7 +49,7 @@ export default function PromptDetailPage() {
   const promptId = params.id as string;
   const isEditMode = searchParams.get('edit') === 'true';
 
-  const { prompts, updatePrompt, deletePrompt, copyPrompt, toggleFavorite, isLoading } = usePrompts();
+  const { prompts, updatePrompt, copyPrompt, toggleFavorite, togglePin, duplicatePrompt, softDeletePrompt, isLoading } = usePrompts();
   const { getCategoryById } = useCategories();
   const { getExpertRoleById } = useExpertRoles();
   const { getTagById } = useTags();
@@ -51,6 +58,7 @@ export default function PromptDetailPage() {
   const [isCopied, setIsCopied] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showVersionHistory, setShowVersionHistory] = useState(false);
 
   const prompt = prompts.find((p) => p.id === promptId);
   const category = prompt?.categoryId ? getCategoryById(prompt.categoryId) : null;
@@ -70,11 +78,23 @@ export default function PromptDetailPage() {
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
-      await deletePrompt(promptId);
+      await softDeletePrompt(promptId);
       router.push('/prompts');
     } finally {
       setIsDeleting(false);
       setShowDeleteDialog(false);
+    }
+  };
+
+  const handlePin = async () => {
+    if (!prompt) return;
+    await togglePin(promptId, !prompt.isPinned);
+  };
+
+  const handleDuplicate = async () => {
+    const newId = await duplicatePrompt(promptId);
+    if (newId) {
+      router.push(`/prompts/${newId}`);
     }
   };
 
@@ -208,7 +228,20 @@ export default function PromptDetailPage() {
               <Button
                 variant="outline"
                 size="icon"
+                onClick={handlePin}
+                title={prompt.isPinned ? 'Unpin' : 'Pin'}
+              >
+                {prompt.isPinned ? (
+                  <PinOff className="h-4 w-4" />
+                ) : (
+                  <Pin className="h-4 w-4" />
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
                 onClick={handleFavorite}
+                title={prompt.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
               >
                 <Star
                   className={cn(
@@ -221,6 +254,7 @@ export default function PromptDetailPage() {
                 variant="outline"
                 size="icon"
                 onClick={handleCopy}
+                title="Copy to clipboard"
               >
                 {isCopied ? (
                   <Check className="h-4 w-4 text-green-500" />
@@ -231,7 +265,24 @@ export default function PromptDetailPage() {
               <Button
                 variant="outline"
                 size="icon"
+                onClick={handleDuplicate}
+                title="Duplicate prompt"
+              >
+                <CopyIcon className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setShowVersionHistory(true)}
+                title="Version History"
+              >
+                <History className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
                 onClick={() => setIsEditing(true)}
+                title="Edit"
               >
                 <Edit className="h-4 w-4" />
               </Button>
@@ -239,6 +290,7 @@ export default function PromptDetailPage() {
                 variant="outline"
                 size="icon"
                 onClick={() => setShowDeleteDialog(true)}
+                title="Move to trash"
               >
                 <Trash2 className="h-4 w-4 text-destructive" />
               </Button>
@@ -314,6 +366,30 @@ export default function PromptDetailPage() {
             </div>
           )}
 
+          {/* AI Models */}
+          {prompt.compatibleModels && prompt.compatibleModels.length > 0 && (
+            <div>
+              <h3 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
+                <Bot className="h-4 w-4" />
+                Compatible AI Models
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {prompt.compatibleModels.map((modelValue) => {
+                  const model = AI_MODELS.find((m) => m.value === modelValue);
+                  if (!model) return null;
+                  return (
+                    <Badge
+                      key={modelValue}
+                      variant="secondary"
+                    >
+                      {model.label}
+                    </Badge>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Metadata */}
           <div className="flex flex-wrap gap-6 pt-4 border-t text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
@@ -338,10 +414,10 @@ export default function PromptDetailPage() {
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Prompt</AlertDialogTitle>
+            <AlertDialogTitle>Move to Trash</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete &quot;{prompt.title}&quot;?
-              This action cannot be undone.
+              Are you sure you want to move &quot;{prompt.title}&quot; to trash?
+              You can restore it later from the Trash page.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -351,11 +427,20 @@ export default function PromptDetailPage() {
               disabled={isDeleting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {isDeleting ? 'Deleting...' : 'Delete'}
+              {isDeleting ? 'Moving...' : 'Move to Trash'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Version History Dialog */}
+      <VersionHistoryDialog
+        promptId={promptId}
+        promptTitle={prompt.title}
+        currentVersion={prompt.version || 1}
+        open={showVersionHistory}
+        onOpenChange={setShowVersionHistory}
+      />
     </div>
   );
 }

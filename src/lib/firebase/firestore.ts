@@ -19,11 +19,14 @@ import { db } from './config';
 import type {
   Prompt,
   PromptFormData,
+  PromptVersion,
   Category,
   Tag,
   ExpertRole,
   PromptFilters,
   SortOptions,
+  BulkAction,
+  BulkOperationResult,
 } from '@/types';
 
 // Helper to get Firestore instance with null check
@@ -64,6 +67,7 @@ export async function createPrompt(userId: string, data: PromptFormData): Promis
     ...data,
     isFavorite: data.isFavorite || false,
     usageCount: 0,
+    version: 1,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   };
@@ -74,9 +78,44 @@ export async function createPrompt(userId: string, data: PromptFormData): Promis
 export async function updatePrompt(
   userId: string,
   promptId: string,
-  data: Partial<PromptFormData>
+  data: Partial<PromptFormData>,
+  saveVersion: boolean = true
 ): Promise<void> {
   const promptRef = doc(getDb(), 'users', userId, 'prompts', promptId);
+
+  // Get current prompt data to save as version
+  if (saveVersion) {
+    const snapshot = await getDoc(promptRef);
+    if (snapshot.exists()) {
+      const currentPrompt = snapshot.data();
+      const currentVersion = currentPrompt.version || 1;
+
+      // Save current state as a version
+      const versionsRef = collection(getDb(), 'users', userId, 'prompts', promptId, 'versions');
+      await addDoc(versionsRef, {
+        promptId,
+        version: currentVersion,
+        title: currentPrompt.title,
+        content: currentPrompt.content,
+        description: currentPrompt.description || '',
+        categoryId: currentPrompt.categoryId || '',
+        subcategoryId: currentPrompt.subcategoryId || '',
+        expertRoleId: currentPrompt.expertRoleId || '',
+        tags: currentPrompt.tags || [],
+        compatibleModels: currentPrompt.compatibleModels || [],
+        createdAt: serverTimestamp(),
+      });
+
+      // Update prompt with incremented version
+      await updateDoc(promptRef, {
+        ...data,
+        version: currentVersion + 1,
+        updatedAt: serverTimestamp(),
+      });
+      return;
+    }
+  }
+
   await updateDoc(promptRef, {
     ...data,
     updatedAt: serverTimestamp(),
@@ -102,6 +141,94 @@ export async function incrementUsageCount(userId: string, promptId: string): Pro
   }
 }
 
+// ========================
+// SPRINT 1: NEW FEATURES
+// ========================
+
+// Duplicate/Clone Prompt
+export async function duplicatePrompt(userId: string, promptId: string): Promise<string> {
+  const promptRef = doc(getDb(), 'users', userId, 'prompts', promptId);
+  const snapshot = await getDoc(promptRef);
+
+  if (!snapshot.exists()) {
+    throw new Error('Prompt not found');
+  }
+
+  const originalPrompt = snapshot.data();
+  const promptsRef = getUserCollection(userId, 'prompts');
+
+  const duplicatedPrompt = {
+    title: `${originalPrompt.title} (Copy)`,
+    content: originalPrompt.content,
+    description: originalPrompt.description || '',
+    categoryId: originalPrompt.categoryId || '',
+    subcategoryId: originalPrompt.subcategoryId || '',
+    expertRoleId: originalPrompt.expertRoleId || '',
+    tags: originalPrompt.tags || [],
+    compatibleModels: originalPrompt.compatibleModels || [],
+    isFavorite: false,
+    isPinned: false,
+    isDeleted: false,
+    usageCount: 0,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  };
+
+  const docRef = await addDoc(promptsRef, duplicatedPrompt);
+  return docRef.id;
+}
+
+// Toggle Pin
+export async function togglePin(userId: string, promptId: string, isPinned: boolean): Promise<void> {
+  const promptRef = doc(getDb(), 'users', userId, 'prompts', promptId);
+  await updateDoc(promptRef, {
+    isPinned,
+    pinnedAt: isPinned ? serverTimestamp() : null,
+    updatedAt: serverTimestamp()
+  });
+}
+
+// Soft Delete (move to trash)
+export async function softDeletePrompt(userId: string, promptId: string): Promise<void> {
+  const promptRef = doc(getDb(), 'users', userId, 'prompts', promptId);
+  await updateDoc(promptRef, {
+    isDeleted: true,
+    deletedAt: serverTimestamp(),
+    updatedAt: serverTimestamp()
+  });
+}
+
+// Restore from trash
+export async function restorePrompt(userId: string, promptId: string): Promise<void> {
+  const promptRef = doc(getDb(), 'users', userId, 'prompts', promptId);
+  await updateDoc(promptRef, {
+    isDeleted: false,
+    deletedAt: null,
+    updatedAt: serverTimestamp()
+  });
+}
+
+// Permanently delete
+export async function permanentlyDeletePrompt(userId: string, promptId: string): Promise<void> {
+  const promptRef = doc(getDb(), 'users', userId, 'prompts', promptId);
+  await deleteDoc(promptRef);
+}
+
+// Empty trash (delete all deleted prompts)
+export async function emptyTrash(userId: string): Promise<number> {
+  const promptsRef = getUserCollection(userId, 'prompts');
+  const q = query(promptsRef, where('isDeleted', '==', true));
+  const snapshot = await getDocs(q);
+
+  const batch = writeBatch(getDb());
+  snapshot.docs.forEach((docSnap) => {
+    batch.delete(docSnap.ref);
+  });
+
+  await batch.commit();
+  return snapshot.docs.length;
+}
+
 // Real-time subscription for prompts
 export function subscribeToPrompts(
   userId: string,
@@ -114,6 +241,182 @@ export function subscribeToPrompts(
     const prompts = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Prompt));
     callback(prompts);
   });
+}
+
+// ========================
+// SPRINT 2: VERSION HISTORY
+// ========================
+
+// Get all versions for a prompt
+export async function getPromptVersions(userId: string, promptId: string): Promise<PromptVersion[]> {
+  const versionsRef = collection(getDb(), 'users', userId, 'prompts', promptId, 'versions');
+  const q = query(versionsRef, orderBy('version', 'desc'));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as PromptVersion));
+}
+
+// Get a specific version
+export async function getPromptVersion(
+  userId: string,
+  promptId: string,
+  versionId: string
+): Promise<PromptVersion | null> {
+  const versionRef = doc(getDb(), 'users', userId, 'prompts', promptId, 'versions', versionId);
+  const snapshot = await getDoc(versionRef);
+  if (snapshot.exists()) {
+    return { id: snapshot.id, ...snapshot.data() } as PromptVersion;
+  }
+  return null;
+}
+
+// Restore a specific version
+export async function restorePromptVersion(
+  userId: string,
+  promptId: string,
+  versionId: string
+): Promise<void> {
+  // Get the version to restore
+  const version = await getPromptVersion(userId, promptId, versionId);
+  if (!version) {
+    throw new Error('Version not found');
+  }
+
+  // Update the prompt with the version data (this will save current as a new version)
+  await updatePrompt(userId, promptId, {
+    title: version.title,
+    content: version.content,
+    description: version.description,
+    categoryId: version.categoryId,
+    subcategoryId: version.subcategoryId,
+    expertRoleId: version.expertRoleId,
+    tags: version.tags,
+    compatibleModels: version.compatibleModels,
+  });
+}
+
+// Subscribe to versions for real-time updates
+export function subscribeToPromptVersions(
+  userId: string,
+  promptId: string,
+  callback: (versions: PromptVersion[]) => void
+): Unsubscribe {
+  const versionsRef = collection(getDb(), 'users', userId, 'prompts', promptId, 'versions');
+  const q = query(versionsRef, orderBy('version', 'desc'));
+
+  return onSnapshot(q, (snapshot) => {
+    const versions = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as PromptVersion));
+    callback(versions);
+  });
+}
+
+// ========================
+// SPRINT 2: BULK OPERATIONS
+// ========================
+
+export async function bulkOperation(
+  userId: string,
+  promptIds: string[],
+  action: BulkAction,
+  payload?: { tagId?: string; categoryId?: string }
+): Promise<BulkOperationResult> {
+  const batch = writeBatch(getDb());
+  let success = 0;
+  let failed = 0;
+  const errors: string[] = [];
+
+  for (const promptId of promptIds) {
+    try {
+      const promptRef = doc(getDb(), 'users', userId, 'prompts', promptId);
+
+      switch (action) {
+        case 'delete':
+          batch.update(promptRef, {
+            isDeleted: true,
+            deletedAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          });
+          break;
+        case 'restore':
+          batch.update(promptRef, {
+            isDeleted: false,
+            deletedAt: null,
+            updatedAt: serverTimestamp(),
+          });
+          break;
+        case 'favorite':
+          batch.update(promptRef, {
+            isFavorite: true,
+            updatedAt: serverTimestamp(),
+          });
+          break;
+        case 'unfavorite':
+          batch.update(promptRef, {
+            isFavorite: false,
+            updatedAt: serverTimestamp(),
+          });
+          break;
+        case 'pin':
+          batch.update(promptRef, {
+            isPinned: true,
+            pinnedAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          });
+          break;
+        case 'unpin':
+          batch.update(promptRef, {
+            isPinned: false,
+            pinnedAt: null,
+            updatedAt: serverTimestamp(),
+          });
+          break;
+        case 'addTag':
+          if (payload?.tagId) {
+            const snapshot = await getDoc(promptRef);
+            if (snapshot.exists()) {
+              const currentTags = snapshot.data().tags || [];
+              if (!currentTags.includes(payload.tagId)) {
+                batch.update(promptRef, {
+                  tags: [...currentTags, payload.tagId],
+                  updatedAt: serverTimestamp(),
+                });
+              }
+            }
+          }
+          break;
+        case 'removeTag':
+          if (payload?.tagId) {
+            const snapshot = await getDoc(promptRef);
+            if (snapshot.exists()) {
+              const currentTags = snapshot.data().tags || [];
+              batch.update(promptRef, {
+                tags: currentTags.filter((t: string) => t !== payload.tagId),
+                updatedAt: serverTimestamp(),
+              });
+            }
+          }
+          break;
+        case 'moveToCategory':
+          if (payload?.categoryId !== undefined) {
+            batch.update(promptRef, {
+              categoryId: payload.categoryId || '',
+              subcategoryId: '',
+              updatedAt: serverTimestamp(),
+            });
+          }
+          break;
+        case 'permanentDelete':
+          batch.delete(promptRef);
+          break;
+      }
+      success++;
+    } catch (error) {
+      failed++;
+      errors.push(`Failed to process prompt ${promptId}`);
+    }
+  }
+
+  await batch.commit();
+  return { success, failed, errors: errors.length > 0 ? errors : undefined };
 }
 
 // ========================

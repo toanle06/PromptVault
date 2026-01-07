@@ -48,6 +48,7 @@ const defaultFilters: PromptFilters = {
   tags: undefined,
   expertRoleId: undefined,
   isFavorite: undefined,
+  isPinned: undefined,
   searchQuery: undefined,
 };
 
@@ -90,7 +91,9 @@ export const usePromptStore = create<PromptState>()((set, get) => ({
   // Computed
   getFilteredPrompts: () => {
     const { prompts, filters, sortOptions } = get();
-    let filtered = [...prompts];
+
+    // First, filter out deleted prompts (unless we're viewing trash)
+    let filtered = prompts.filter((p) => !p.isDeleted);
 
     // Apply filters
     if (filters.categoryId) {
@@ -117,10 +120,26 @@ export const usePromptStore = create<PromptState>()((set, get) => ({
       filtered = filtered.filter((p) => p.isFavorite === filters.isFavorite);
     }
 
+    if (filters.isPinned !== undefined) {
+      filtered = filtered.filter((p) => p.isPinned === filters.isPinned);
+    }
+
     // Note: Text search is handled separately with Fuse.js
 
-    // Apply sorting
+    // Apply sorting with pinned prompts always first
     filtered.sort((a, b) => {
+      // Pinned prompts always come first
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+
+      // If both pinned or both not pinned, sort by pinnedAt first for pinned items
+      if (a.isPinned && b.isPinned) {
+        const aPinDate = a.pinnedAt instanceof Timestamp ? a.pinnedAt.toDate() : new Date(0);
+        const bPinDate = b.pinnedAt instanceof Timestamp ? b.pinnedAt.toDate() : new Date(0);
+        return bPinDate.getTime() - aPinDate.getTime(); // Most recently pinned first
+      }
+
+      // Then apply normal sorting
       const aVal = a[sortOptions.field];
       const bVal = b[sortOptions.field];
 

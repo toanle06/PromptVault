@@ -30,13 +30,17 @@ import {
   Settings,
   Sparkles,
   ChevronRight,
+  Trash2,
+  Pin,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const mainNavItems = [
   { title: 'Dashboard', url: '/', icon: Home },
   { title: 'All Prompts', url: '/prompts', icon: FileText },
+  { title: 'Pinned', url: '/prompts?pinned=true', icon: Pin },
   { title: 'Favorites', url: '/prompts?favorites=true', icon: Star },
+  { title: 'Trash', url: '/trash', icon: Trash2 },
 ];
 
 const manageNavItems = [

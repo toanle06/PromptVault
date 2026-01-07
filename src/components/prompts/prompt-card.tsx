@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,7 +25,12 @@ import {
   Trash2,
   Check,
   ExternalLink,
+  Pin,
+  PinOff,
+  Copy as CopyIcon,
+  Bot,
 } from 'lucide-react';
+import { AI_MODELS } from '@/types';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -32,11 +38,21 @@ interface PromptCardProps {
   prompt: Prompt;
   onEdit?: (prompt: Prompt) => void;
   onDelete?: (prompt: Prompt) => void;
+  isSelectionMode?: boolean;
+  isSelected?: boolean;
+  onSelectionChange?: (promptId: string, selected: boolean) => void;
 }
 
-export function PromptCard({ prompt, onEdit, onDelete }: PromptCardProps) {
+export function PromptCard({
+  prompt,
+  onEdit,
+  onDelete,
+  isSelectionMode = false,
+  isSelected = false,
+  onSelectionChange,
+}: PromptCardProps) {
   const [isCopied, setIsCopied] = useState(false);
-  const { copyPrompt, toggleFavorite } = usePrompts();
+  const { copyPrompt, toggleFavorite, togglePin, duplicatePrompt, softDeletePrompt } = usePrompts();
   const { getCategoryById } = useCategories();
   const { getExpertRoleById } = useExpertRoles();
   const { getTagById } = useTags();
@@ -65,23 +81,67 @@ export function PromptCard({ prompt, onEdit, onDelete }: PromptCardProps) {
     onEdit?.(prompt);
   };
 
-  const handleDelete = (e: React.MouseEvent) => {
+  const handleDelete = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    onDelete?.(prompt);
+    await softDeletePrompt(prompt.id);
+  };
+
+  const handlePin = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    await togglePin(prompt.id, !prompt.isPinned);
+  };
+
+  const handleDuplicate = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    await duplicatePrompt(prompt.id);
+  };
+
+  const handleSelectionToggle = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onSelectionChange?.(prompt.id, !isSelected);
+  };
+
+  const handleCardClick = (e: React.MouseEvent) => {
+    if (isSelectionMode) {
+      e.preventDefault();
+      onSelectionChange?.(prompt.id, !isSelected);
+    }
   };
 
   const createdAt = prompt.createdAt?.toDate?.() || new Date();
 
-  return (
-    <Link href={`/prompts/${prompt.id}`}>
-      <Card className="group h-full hover:shadow-md transition-shadow cursor-pointer">
-        <CardHeader className="pb-2">
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex-1 min-w-0">
+  const cardContent = (
+    <Card
+      className={cn(
+        "group h-full hover:shadow-md transition-shadow cursor-pointer",
+        prompt.isPinned && "ring-2 ring-primary/50 bg-primary/5",
+        isSelected && "ring-2 ring-primary bg-primary/10"
+      )}
+      onClick={handleCardClick}
+    >
+      <CardHeader className="pb-2">
+        <div className="flex items-start justify-between gap-2">
+          {isSelectionMode && (
+            <div className="pt-1" onClick={handleSelectionToggle}>
+              <Checkbox
+                checked={isSelected}
+                className="data-[state=checked]:bg-primary"
+              />
+            </div>
+          )}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              {prompt.isPinned && (
+                <Pin className="h-4 w-4 text-primary flex-shrink-0" />
+              )}
               <h3 className="font-semibold line-clamp-2 group-hover:text-primary transition-colors">
                 {prompt.title}
               </h3>
+            </div>
               {category && (
                 <Badge
                   variant="secondary"
@@ -108,6 +168,23 @@ export function PromptCard({ prompt, onEdit, onDelete }: PromptCardProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handlePin}>
+                  {prompt.isPinned ? (
+                    <>
+                      <PinOff className="mr-2 h-4 w-4" />
+                      Unpin
+                    </>
+                  ) : (
+                    <>
+                      <Pin className="mr-2 h-4 w-4" />
+                      Pin
+                    </>
+                  )}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleDuplicate}>
+                  <CopyIcon className="mr-2 h-4 w-4" />
+                  Duplicate
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleEdit}>
                   <Edit className="mr-2 h-4 w-4" />
                   Edit
@@ -117,7 +194,7 @@ export function PromptCard({ prompt, onEdit, onDelete }: PromptCardProps) {
                   className="text-destructive"
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
-                  Delete
+                  Move to Trash
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -129,11 +206,36 @@ export function PromptCard({ prompt, onEdit, onDelete }: PromptCardProps) {
             {prompt.content}
           </p>
 
-          {expertRole && (
-            <Badge variant="outline" className="mt-2">
-              {expertRole.name}
-            </Badge>
-          )}
+          <div className="flex flex-wrap gap-1 mt-2">
+            {expertRole && (
+              <Badge variant="outline">
+                {expertRole.name}
+              </Badge>
+            )}
+            {prompt.compatibleModels && prompt.compatibleModels.length > 0 && (
+              <>
+                {prompt.compatibleModels.slice(0, 2).map((modelValue) => {
+                  const model = AI_MODELS.find((m) => m.value === modelValue);
+                  if (!model) return null;
+                  return (
+                    <Badge
+                      key={modelValue}
+                      variant="outline"
+                      className="text-xs bg-muted/50"
+                    >
+                      <Bot className="mr-1 h-3 w-3" />
+                      {model.label}
+                    </Badge>
+                  );
+                })}
+                {prompt.compatibleModels.length > 2 && (
+                  <Badge variant="outline" className="text-xs">
+                    +{prompt.compatibleModels.length - 2}
+                  </Badge>
+                )}
+              </>
+            )}
+          </div>
         </CardContent>
 
         <CardFooter className="pt-2 flex items-center justify-between">
@@ -199,6 +301,12 @@ export function PromptCard({ prompt, onEdit, onDelete }: PromptCardProps) {
           </p>
         </div>
       </Card>
-    </Link>
   );
+
+  // In selection mode, don't wrap with Link
+  if (isSelectionMode) {
+    return cardContent;
+  }
+
+  return <Link href={`/prompts/${prompt.id}`}>{cardContent}</Link>;
 }

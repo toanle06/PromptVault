@@ -28,8 +28,9 @@ import { Badge } from '@/components/ui/badge';
 import { useCategories } from '@/hooks/use-categories';
 import { useTags } from '@/hooks/use-tags';
 import { useExpertRoles } from '@/hooks/use-expert-roles';
-import type { Prompt, PromptFormData } from '@/types';
-import { X, Loader2 } from 'lucide-react';
+import type { Prompt, PromptFormData, AIModel } from '@/types';
+import { AI_MODELS } from '@/types';
+import { X, Loader2, Bot } from 'lucide-react';
 
 const formSchema = z.object({
   title: z.string().min(1, 'Title is required').max(200, 'Title must be less than 200 characters'),
@@ -40,6 +41,7 @@ const formSchema = z.object({
   expertRoleId: z.string().optional(),
   tags: z.array(z.string()),
   isFavorite: z.boolean(),
+  compatibleModels: z.array(z.string()).optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -67,11 +69,13 @@ export function PromptForm({ prompt, onSubmit, onCancel, isSubmitting }: PromptF
       expertRoleId: prompt?.expertRoleId || '',
       tags: prompt?.tags || [],
       isFavorite: prompt?.isFavorite || false,
+      compatibleModels: prompt?.compatibleModels || [],
     },
   });
 
   const selectedCategoryId = form.watch('categoryId');
   const selectedTags = form.watch('tags');
+  const selectedModels = form.watch('compatibleModels') || [];
 
   // Get subcategories for selected category
   const subcategories = selectedCategoryId
@@ -92,6 +96,18 @@ export function PromptForm({ prompt, onSubmit, onCancel, isSubmitting }: PromptF
   const handleRemoveTag = (tagId: string) => {
     const currentTags = form.getValues('tags');
     form.setValue('tags', currentTags.filter((t) => t !== tagId));
+  };
+
+  const handleAddModel = (model: string) => {
+    const currentModels = form.getValues('compatibleModels') || [];
+    if (!currentModels.includes(model)) {
+      form.setValue('compatibleModels', [...currentModels, model]);
+    }
+  };
+
+  const handleRemoveModel = (model: string) => {
+    const currentModels = form.getValues('compatibleModels') || [];
+    form.setValue('compatibleModels', currentModels.filter((m) => m !== model));
   };
 
   return (
@@ -302,6 +318,83 @@ export function PromptForm({ prompt, onSubmit, onCancel, isSubmitting }: PromptF
                         {tag.name}
                       </Badge>
                     ))}
+                </div>
+              </div>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* AI Models */}
+        <FormField
+          control={form.control}
+          name="compatibleModels"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="flex items-center gap-2">
+                <Bot className="h-4 w-4" />
+                Compatible AI Models
+              </FormLabel>
+              <FormDescription>
+                Select which AI models this prompt works best with
+              </FormDescription>
+              <div className="space-y-3">
+                {/* Selected models */}
+                {selectedModels.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {selectedModels.map((modelValue) => {
+                      const model = AI_MODELS.find((m) => m.value === modelValue);
+                      if (!model) return null;
+                      return (
+                        <Badge
+                          key={modelValue}
+                          variant="secondary"
+                          className="cursor-pointer"
+                        >
+                          {model.label}
+                          <X className="ml-1 h-3 w-3" onClick={() => handleRemoveModel(modelValue)} />
+                        </Badge>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Text Models */}
+                <div>
+                  <p className="text-xs text-muted-foreground mb-2">Text Models</p>
+                  <div className="flex flex-wrap gap-1">
+                    {AI_MODELS
+                      .filter((model) => model.category === 'text' && !selectedModels.includes(model.value))
+                      .map((model) => (
+                        <Badge
+                          key={model.value}
+                          variant="outline"
+                          className="cursor-pointer hover:bg-accent"
+                          onClick={() => handleAddModel(model.value)}
+                        >
+                          {model.label}
+                        </Badge>
+                      ))}
+                  </div>
+                </div>
+
+                {/* Image Models */}
+                <div>
+                  <p className="text-xs text-muted-foreground mb-2">Image Models</p>
+                  <div className="flex flex-wrap gap-1">
+                    {AI_MODELS
+                      .filter((model) => model.category === 'image' && !selectedModels.includes(model.value))
+                      .map((model) => (
+                        <Badge
+                          key={model.value}
+                          variant="outline"
+                          className="cursor-pointer hover:bg-accent"
+                          onClick={() => handleAddModel(model.value)}
+                        >
+                          {model.label}
+                        </Badge>
+                      ))}
+                  </div>
                 </div>
               </div>
               <FormMessage />

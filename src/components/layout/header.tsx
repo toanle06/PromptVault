@@ -24,12 +24,13 @@ import {
   Settings,
   User,
   Plus,
+  Keyboard,
 } from 'lucide-react';
 
 export function Header() {
   const router = useRouter();
   const { user, userData, signOut } = useAuth();
-  const { setCreatePromptOpen } = useUIStore();
+  const { setCreatePromptOpen, setShortcutsHelpOpen } = useUIStore();
   const { theme, setTheme } = useTheme();
 
   const handleSignOut = async () => {
@@ -71,6 +72,16 @@ export function Header() {
           className="sm:hidden"
         >
           <Plus className="h-5 w-5" />
+        </Button>
+
+        <Button
+          onClick={() => setShortcutsHelpOpen(true)}
+          size="icon"
+          variant="ghost"
+          className="hidden sm:flex"
+          title="Keyboard Shortcuts (?)"
+        >
+          <Keyboard className="h-5 w-5" />
         </Button>
 
         <DropdownMenu>
