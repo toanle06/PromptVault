@@ -195,6 +195,7 @@ export function PromptList({ prompts, isLoading, isTrashView = false }: PromptLi
       {isSelectionMode && selectedIds.length > 0 && (
         <BulkSelectionBar
           selectedIds={selectedIds}
+          prompts={prompts}
           onClearSelection={handleClearSelection}
           onSelectAll={handleSelectAll}
           totalCount={prompts.length}

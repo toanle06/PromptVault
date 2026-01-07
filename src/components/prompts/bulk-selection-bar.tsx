@@ -38,10 +38,14 @@ import {
   MoreHorizontal,
   Loader2,
   CheckSquare,
+  Download,
 } from 'lucide-react';
+import { ExportDialog } from './export-dialog';
+import type { Prompt } from '@/types';
 
 interface BulkSelectionBarProps {
   selectedIds: string[];
+  prompts?: Prompt[];
   onClearSelection: () => void;
   onSelectAll?: () => void;
   totalCount?: number;
@@ -50,6 +54,7 @@ interface BulkSelectionBarProps {
 
 export function BulkSelectionBar({
   selectedIds,
+  prompts = [],
   onClearSelection,
   onSelectAll,
   totalCount,
@@ -61,10 +66,14 @@ export function BulkSelectionBar({
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showExportDialog, setShowExportDialog] = useState(false);
   const [pendingAction, setPendingAction] = useState<{
     action: BulkAction;
     payload?: { tagId?: string; categoryId?: string };
   } | null>(null);
+
+  // Get the selected prompts for export
+  const selectedPrompts = prompts.filter((p) => selectedIds.includes(p.id));
 
   const handleBulkAction = async (
     action: BulkAction,
@@ -170,6 +179,15 @@ export function BulkSelectionBar({
               >
                 <Pin className="h-4 w-4 mr-1" />
                 Pin
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setShowExportDialog(true)}
+                disabled={isProcessing || selectedPrompts.length === 0}
+              >
+                <Download className="h-4 w-4 mr-1" />
+                Export
               </Button>
 
               <DropdownMenu>
@@ -305,6 +323,13 @@ export function BulkSelectionBar({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Export Dialog */}
+      <ExportDialog
+        prompts={selectedPrompts}
+        open={showExportDialog}
+        onOpenChange={setShowExportDialog}
+      />
     </>
   );
 }

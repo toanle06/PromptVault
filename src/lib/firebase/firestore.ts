@@ -20,6 +20,7 @@ import type {
   Prompt,
   PromptFormData,
   PromptVersion,
+  PromptAttachment,
   Category,
   Tag,
   ExpertRole,
@@ -307,6 +308,147 @@ export function subscribeToPromptVersions(
     const versions = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as PromptVersion));
     callback(versions);
   });
+}
+
+// ========================
+// SPRINT 3: PROMPT ATTACHMENTS
+// ========================
+
+// Get all attachments for a prompt
+export async function getAttachments(userId: string, promptId: string): Promise<PromptAttachment[]> {
+  const attachmentsRef = collection(getDb(), 'users', userId, 'prompts', promptId, 'attachments');
+  const q = query(attachmentsRef, orderBy('order', 'asc'));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as PromptAttachment));
+}
+
+// Get a single attachment
+export async function getAttachment(
+  userId: string,
+  promptId: string,
+  attachmentId: string
+): Promise<PromptAttachment | null> {
+  const attachmentRef = doc(getDb(), 'users', userId, 'prompts', promptId, 'attachments', attachmentId);
+  const snapshot = await getDoc(attachmentRef);
+  if (snapshot.exists()) {
+    return { id: snapshot.id, ...snapshot.data() } as PromptAttachment;
+  }
+  return null;
+}
+
+// Create an attachment record
+export async function createAttachment(
+  userId: string,
+  promptId: string,
+  attachmentId: string,
+  data: Omit<PromptAttachment, 'id' | 'createdAt'>
+): Promise<void> {
+  const attachmentRef = doc(getDb(), 'users', userId, 'prompts', promptId, 'attachments', attachmentId);
+  await updateDoc(doc(getDb(), 'users', userId, 'prompts', promptId), {
+    updatedAt: serverTimestamp(),
+  }).catch(() => {});
+
+  const attachmentsRef = collection(getDb(), 'users', userId, 'prompts', promptId, 'attachments');
+  const attachmentDocRef = doc(attachmentsRef, attachmentId);
+
+  await addDoc(collection(getDb(), 'users', userId, 'prompts', promptId, 'attachments'), {
+    ...data,
+    createdAt: serverTimestamp(),
+  });
+}
+
+// Create attachment with specific ID
+export async function createAttachmentWithId(
+  userId: string,
+  promptId: string,
+  attachmentId: string,
+  data: Omit<PromptAttachment, 'id' | 'createdAt'>
+): Promise<void> {
+  const attachmentRef = doc(getDb(), 'users', userId, 'prompts', promptId, 'attachments', attachmentId);
+
+  // Use setDoc with merge to create or update
+  const { setDoc } = await import('firebase/firestore');
+  await setDoc(attachmentRef, {
+    ...data,
+    createdAt: serverTimestamp(),
+  });
+
+  // Update prompt's updatedAt
+  await updateDoc(doc(getDb(), 'users', userId, 'prompts', promptId), {
+    updatedAt: serverTimestamp(),
+  }).catch(() => {});
+}
+
+// Delete an attachment record
+export async function deleteAttachment(
+  userId: string,
+  promptId: string,
+  attachmentId: string
+): Promise<void> {
+  const attachmentRef = doc(getDb(), 'users', userId, 'prompts', promptId, 'attachments', attachmentId);
+  await deleteDoc(attachmentRef);
+
+  // Update prompt's updatedAt
+  await updateDoc(doc(getDb(), 'users', userId, 'prompts', promptId), {
+    updatedAt: serverTimestamp(),
+  }).catch(() => {});
+}
+
+// Update attachment order
+export async function updateAttachmentOrder(
+  userId: string,
+  promptId: string,
+  attachmentId: string,
+  order: number
+): Promise<void> {
+  const attachmentRef = doc(getDb(), 'users', userId, 'prompts', promptId, 'attachments', attachmentId);
+  await updateDoc(attachmentRef, { order });
+}
+
+// Reorder attachments
+export async function reorderAttachments(
+  userId: string,
+  promptId: string,
+  orderedIds: string[]
+): Promise<void> {
+  const batch = writeBatch(getDb());
+
+  orderedIds.forEach((attachmentId, index) => {
+    const attachmentRef = doc(getDb(), 'users', userId, 'prompts', promptId, 'attachments', attachmentId);
+    batch.update(attachmentRef, { order: index });
+  });
+
+  await batch.commit();
+}
+
+// Subscribe to attachments for real-time updates
+export function subscribeToAttachments(
+  userId: string,
+  promptId: string,
+  callback: (attachments: PromptAttachment[]) => void
+): Unsubscribe {
+  const attachmentsRef = collection(getDb(), 'users', userId, 'prompts', promptId, 'attachments');
+  const q = query(attachmentsRef, orderBy('order', 'asc'));
+
+  return onSnapshot(q, (snapshot) => {
+    const attachments = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as PromptAttachment));
+    callback(attachments);
+  });
+}
+
+// Delete all attachments for a prompt
+export async function deleteAllAttachments(userId: string, promptId: string): Promise<void> {
+  const attachmentsRef = collection(getDb(), 'users', userId, 'prompts', promptId, 'attachments');
+  const snapshot = await getDocs(attachmentsRef);
+
+  if (snapshot.empty) return;
+
+  const batch = writeBatch(getDb());
+  snapshot.docs.forEach((doc) => {
+    batch.delete(doc.ref);
+  });
+
+  await batch.commit();
 }
 
 // ========================

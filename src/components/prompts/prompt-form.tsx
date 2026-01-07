@@ -28,9 +28,21 @@ import { Badge } from '@/components/ui/badge';
 import { useCategories } from '@/hooks/use-categories';
 import { useTags } from '@/hooks/use-tags';
 import { useExpertRoles } from '@/hooks/use-expert-roles';
-import type { Prompt, PromptFormData, AIModel } from '@/types';
+import type { Prompt, PromptFormData, AIModel, PromptVariable } from '@/types';
 import { AI_MODELS } from '@/types';
-import { X, Loader2, Bot } from 'lucide-react';
+import { X, Loader2, Bot, ImageIcon } from 'lucide-react';
+import { useAttachments } from '@/hooks/use-attachments';
+import { AttachmentUploader } from './attachment-uploader';
+import { AttachmentGallery } from './attachment-gallery';
+import { VariableEditor } from './variable-editor';
+
+const variableSchema = z.object({
+  name: z.string(),
+  description: z.string().optional(),
+  defaultValue: z.string().optional(),
+  placeholder: z.string().optional(),
+  required: z.boolean().optional(),
+});
 
 const formSchema = z.object({
   title: z.string().min(1, 'Title is required').max(200, 'Title must be less than 200 characters'),
@@ -42,6 +54,7 @@ const formSchema = z.object({
   tags: z.array(z.string()),
   isFavorite: z.boolean(),
   compatibleModels: z.array(z.string()).optional(),
+  variables: z.array(variableSchema).optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -58,6 +71,15 @@ export function PromptForm({ prompt, onSubmit, onCancel, isSubmitting }: PromptF
   const { tags } = useTags();
   const { expertRoles } = useExpertRoles();
 
+  // Attachments - only available when editing existing prompt
+  const {
+    attachments,
+    uploadProgress,
+    uploadAttachments,
+    deleteAttachment,
+    reorderAttachments,
+  } = useAttachments(prompt?.id || null);
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -70,12 +92,19 @@ export function PromptForm({ prompt, onSubmit, onCancel, isSubmitting }: PromptF
       tags: prompt?.tags || [],
       isFavorite: prompt?.isFavorite || false,
       compatibleModels: prompt?.compatibleModels || [],
+      variables: prompt?.variables || [],
     },
   });
 
   const selectedCategoryId = form.watch('categoryId');
   const selectedTags = form.watch('tags');
   const selectedModels = form.watch('compatibleModels') || [];
+  const content = form.watch('content');
+  const variables = form.watch('variables') || [];
+
+  const handleVariablesChange = (newVariables: PromptVariable[]) => {
+    form.setValue('variables', newVariables);
+  };
 
   // Get subcategories for selected category
   const subcategories = selectedCategoryId
@@ -148,6 +177,13 @@ export function PromptForm({ prompt, onSubmit, onCancel, isSubmitting }: PromptF
               <FormMessage />
             </FormItem>
           )}
+        />
+
+        {/* Variable Editor */}
+        <VariableEditor
+          content={content}
+          variables={variables}
+          onChange={handleVariablesChange}
         />
 
         {/* Description */}
@@ -401,6 +437,36 @@ export function PromptForm({ prompt, onSubmit, onCancel, isSubmitting }: PromptF
             </FormItem>
           )}
         />
+
+        {/* Attachments - Only show when editing existing prompt */}
+        {prompt?.id && (
+          <div className="space-y-3">
+            <Label className="flex items-center gap-2">
+              <ImageIcon className="h-4 w-4" />
+              Sample Images
+            </Label>
+            <p className="text-sm text-muted-foreground">
+              Upload sample output images to show expected results for this prompt
+            </p>
+
+            {/* Existing Attachments */}
+            {attachments.length > 0 && (
+              <AttachmentGallery
+                attachments={attachments}
+                onDelete={deleteAttachment}
+                onReorder={reorderAttachments}
+                isEditable
+              />
+            )}
+
+            {/* Upload New */}
+            <AttachmentUploader
+              onUpload={uploadAttachments}
+              uploadProgress={uploadProgress}
+              currentCount={attachments.length}
+            />
+          </div>
+        )}
 
         {/* Actions */}
         <div className="flex justify-end gap-2">

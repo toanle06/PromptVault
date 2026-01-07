@@ -41,6 +41,12 @@ import { AI_MODELS } from '@/types';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow, format } from 'date-fns';
 import { VersionHistoryDialog } from '@/components/prompts/version-history-dialog';
+import { VariableFillerDialog } from '@/components/prompts/variable-filler-dialog';
+import { ExportDialog } from '@/components/prompts/export-dialog';
+import { useAttachments } from '@/hooks/use-attachments';
+import { AttachmentGallery } from '@/components/prompts/attachment-gallery';
+import { ImageIcon, Variable, Download } from 'lucide-react';
+import { hasVariables } from '@/lib/utils/template-parser';
 
 export default function PromptDetailPage() {
   const params = useParams();
@@ -53,17 +59,21 @@ export default function PromptDetailPage() {
   const { getCategoryById } = useCategories();
   const { getExpertRoleById } = useExpertRoles();
   const { getTagById } = useTags();
+  const { attachments } = useAttachments(promptId);
 
   const [isEditing, setIsEditing] = useState(isEditMode);
   const [isCopied, setIsCopied] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showVersionHistory, setShowVersionHistory] = useState(false);
+  const [showVariableFiller, setShowVariableFiller] = useState(false);
+  const [showExportDialog, setShowExportDialog] = useState(false);
 
   const prompt = prompts.find((p) => p.id === promptId);
   const category = prompt?.categoryId ? getCategoryById(prompt.categoryId) : null;
   const subcategory = prompt?.subcategoryId ? getCategoryById(prompt.subcategoryId) : null;
   const expertRole = prompt?.expertRoleId ? getExpertRoleById(prompt.expertRoleId) : null;
+  const isTemplate = prompt ? hasVariables(prompt.content) : false;
 
   useEffect(() => {
     setIsEditing(isEditMode);
@@ -250,6 +260,18 @@ export default function PromptDetailPage() {
                   )}
                 />
               </Button>
+              {isTemplate && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => setShowVariableFiller(true)}
+                  title="Fill template variables"
+                  className="gap-2"
+                >
+                  <Variable className="h-4 w-4" />
+                  Use Template
+                </Button>
+              )}
               <Button
                 variant="outline"
                 size="icon"
@@ -277,6 +299,14 @@ export default function PromptDetailPage() {
                 title="Version History"
               >
                 <History className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setShowExportDialog(true)}
+                title="Export"
+              >
+                <Download className="h-4 w-4" />
               </Button>
               <Button
                 variant="outline"
@@ -390,6 +420,20 @@ export default function PromptDetailPage() {
             </div>
           )}
 
+          {/* Sample Images / Attachments */}
+          {attachments.length > 0 && (
+            <div>
+              <h3 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
+                <ImageIcon className="h-4 w-4" />
+                Sample Images
+              </h3>
+              <AttachmentGallery
+                attachments={attachments}
+                isEditable={false}
+              />
+            </div>
+          )}
+
           {/* Metadata */}
           <div className="flex flex-wrap gap-6 pt-4 border-t text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
@@ -440,6 +484,20 @@ export default function PromptDetailPage() {
         currentVersion={prompt.version || 1}
         open={showVersionHistory}
         onOpenChange={setShowVersionHistory}
+      />
+
+      {/* Variable Filler Dialog */}
+      <VariableFillerDialog
+        prompt={prompt}
+        open={showVariableFiller}
+        onOpenChange={setShowVariableFiller}
+      />
+
+      {/* Export Dialog */}
+      <ExportDialog
+        prompts={[prompt]}
+        open={showExportDialog}
+        onOpenChange={setShowExportDialog}
       />
     </div>
   );

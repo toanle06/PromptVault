@@ -113,6 +113,8 @@ export interface PromptVariable {
   name: string;
   description?: string;
   defaultValue?: string;
+  placeholder?: string;
+  required?: boolean;
 }
 
 export interface PromptFormData {
@@ -125,6 +127,8 @@ export interface PromptFormData {
   tags: string[];
   isFavorite?: boolean;
   compatibleModels?: AIModel[];
+  variables?: PromptVariable[];
+  isTemplate?: boolean;
 }
 
 // Category Types
@@ -261,4 +265,45 @@ export interface KeyboardShortcut {
   action: string;
   description: string;
   scope?: 'global' | 'list' | 'detail' | 'form';
+}
+
+// Sprint 3: Prompt Attachments Types
+export interface PromptAttachment {
+  id: string;
+  promptId: string;
+  fileName: string;
+  originalName: string;
+  mimeType: string;
+  size: number;
+  url: string;
+  thumbnailUrl?: string;
+  order: number;
+  type: 'image' | 'document' | 'other';
+  createdAt: Timestamp;
+}
+
+export interface AttachmentUploadProgress {
+  fileName: string;
+  progress: number;
+  status: 'uploading' | 'complete' | 'error';
+  error?: string;
+}
+
+// Attachment Constants
+export const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+export const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+export const MAX_ATTACHMENTS_PER_PROMPT = 10;
+
+// Sprint 3: Export Types
+export type ExportFormat = 'json' | 'markdown' | 'text';
+
+export interface ExportOptions {
+  format: ExportFormat;
+  includeMetadata: boolean;
+  includeVariables: boolean;
+}
+
+// Sprint 3: Variable Values for Templates
+export interface VariableValues {
+  [variableName: string]: string;
 }

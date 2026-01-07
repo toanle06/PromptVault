@@ -29,10 +29,14 @@ import {
   PinOff,
   Copy as CopyIcon,
   Bot,
+  Variable,
+  Download,
 } from 'lucide-react';
 import { AI_MODELS } from '@/types';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
+import { hasVariables } from '@/lib/utils/template-parser';
+import { ExportDialog } from './export-dialog';
 
 interface PromptCardProps {
   prompt: Prompt;
@@ -52,6 +56,7 @@ export function PromptCard({
   onSelectionChange,
 }: PromptCardProps) {
   const [isCopied, setIsCopied] = useState(false);
+  const [showExportDialog, setShowExportDialog] = useState(false);
   const { copyPrompt, toggleFavorite, togglePin, duplicatePrompt, softDeletePrompt } = usePrompts();
   const { getCategoryById } = useCategories();
   const { getExpertRoleById } = useExpertRoles();
@@ -59,6 +64,7 @@ export function PromptCard({
 
   const category = prompt.categoryId ? getCategoryById(prompt.categoryId) : null;
   const expertRole = prompt.expertRoleId ? getExpertRoleById(prompt.expertRoleId) : null;
+  const isTemplate = hasVariables(prompt.content);
 
   const handleCopy = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -97,6 +103,12 @@ export function PromptCard({
     e.preventDefault();
     e.stopPropagation();
     await duplicatePrompt(prompt.id);
+  };
+
+  const handleExport = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowExportDialog(true);
   };
 
   const handleSelectionToggle = (e: React.MouseEvent) => {
@@ -142,19 +154,29 @@ export function PromptCard({
                 {prompt.title}
               </h3>
             </div>
-              {category && (
-                <Badge
-                  variant="secondary"
-                  className="mt-1"
-                  style={{
-                    backgroundColor: category.color ? `${category.color}20` : undefined,
-                    color: category.color || undefined,
-                    borderColor: category.color || undefined,
-                  }}
-                >
-                  {category.name}
-                </Badge>
-              )}
+              <div className="flex flex-wrap gap-1 mt-1">
+                {isTemplate && (
+                  <Badge
+                    variant="secondary"
+                    className="text-xs bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
+                  >
+                    <Variable className="mr-1 h-3 w-3" />
+                    Template
+                  </Badge>
+                )}
+                {category && (
+                  <Badge
+                    variant="secondary"
+                    style={{
+                      backgroundColor: category.color ? `${category.color}20` : undefined,
+                      color: category.color || undefined,
+                      borderColor: category.color || undefined,
+                    }}
+                  >
+                    {category.name}
+                  </Badge>
+                )}
+              </div>
             </div>
 
             <DropdownMenu>
@@ -184,6 +206,10 @@ export function PromptCard({
                 <DropdownMenuItem onClick={handleDuplicate}>
                   <CopyIcon className="mr-2 h-4 w-4" />
                   Duplicate
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExport}>
+                  <Download className="mr-2 h-4 w-4" />
+                  Export
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleEdit}>
                   <Edit className="mr-2 h-4 w-4" />
@@ -305,8 +331,26 @@ export function PromptCard({
 
   // In selection mode, don't wrap with Link
   if (isSelectionMode) {
-    return cardContent;
+    return (
+      <>
+        {cardContent}
+        <ExportDialog
+          prompts={[prompt]}
+          open={showExportDialog}
+          onOpenChange={setShowExportDialog}
+        />
+      </>
+    );
   }
 
-  return <Link href={`/prompts/${prompt.id}`}>{cardContent}</Link>;
+  return (
+    <>
+      <Link href={`/prompts/${prompt.id}`}>{cardContent}</Link>
+      <ExportDialog
+        prompts={[prompt]}
+        open={showExportDialog}
+        onOpenChange={setShowExportDialog}
+      />
+    </>
+  );
 }
