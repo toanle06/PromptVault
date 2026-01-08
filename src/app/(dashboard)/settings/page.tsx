@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import { useTheme } from 'next-themes';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { useAuthStore } from '@/store/auth-store';
-import { useUIStore } from '@/store/ui-store';
 import { usePrompts } from '@/hooks/use-prompts';
 import { useCategories } from '@/hooks/use-categories';
 import { useTags } from '@/hooks/use-tags';
@@ -107,7 +107,7 @@ const SEED_TAGS = [
 
 export default function SettingsPage() {
   const { user, userData } = useAuthStore();
-  const { theme, setTheme } = useUIStore();
+  const { theme, setTheme } = useTheme();
   const { prompts, importPrompts } = usePrompts();
   const { categories, importCategories } = useCategories();
   const { tags, importTags } = useTags();
