@@ -1,22 +1,12 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  Command,
-  CommandDialog,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-  CommandSeparator,
-} from '@/components/ui/command';
-import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useSearch } from '@/hooks/use-search';
 import { useCategories } from '@/hooks/use-categories';
-import { Search, FileText, Clock, X } from 'lucide-react';
+import { Search, FileText, Clock } from 'lucide-react';
 
 export function SearchBar() {
   const router = useRouter();
@@ -32,15 +22,55 @@ export function SearchBar() {
   } = useSearch();
   const { getCategoryById } = useCategories();
   const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isFocused, setIsFocused] = useState(false);
+
+  // Show dropdown when focused or has query
+  const showDropdown = isFocused || searchQuery.length > 0;
+
+  // Handle click outside to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsFocused(false);
+        if (searchQuery.length === 0) {
+          setSearchOpen(false);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [searchQuery, setSearchOpen]);
+
+  // Handle keyboard shortcut (Cmd+K)
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
+        event.preventDefault();
+        inputRef.current?.focus();
+        setIsFocused(true);
+      }
+      if (event.key === 'Escape') {
+        inputRef.current?.blur();
+        setIsFocused(false);
+        clearSearch();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [clearSearch]);
 
   // Handle search input
   const handleSearch = (value: string) => {
     search(value);
+    setSearchOpen(true);
   };
 
   // Handle select prompt
   const handleSelectPrompt = (promptId: string) => {
-    setSearchOpen(false);
+    setIsFocused(false);
     clearSearch();
     router.push(`/prompts/${promptId}`);
   };
@@ -50,118 +80,114 @@ export function SearchBar() {
     search(query);
   };
 
+  // Handle focus
+  const handleFocus = () => {
+    setIsFocused(true);
+    setSearchOpen(true);
+  };
+
   return (
-    <>
-      {/* Search Trigger Button */}
-      <Button
-        variant="outline"
-        className="relative h-9 w-full justify-start text-sm text-muted-foreground sm:w-64 md:w-80 lg:w-96"
-        onClick={() => setSearchOpen(true)}
-        data-search-input
-        aria-label="Search prompts. Press Command K to open search dialog"
-        aria-keyshortcuts="Meta+K"
-      >
-        <Search className="mr-2 h-4 w-4" aria-hidden="true" />
-        <span className="hidden sm:inline">Search prompts...</span>
-        <span className="sm:hidden">Search...</span>
-        <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex" aria-hidden="true">
+    <div ref={containerRef} className="relative w-full sm:w-64 md:w-80 lg:w-96">
+      {/* Search Input */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+        <Input
+          ref={inputRef}
+          type="text"
+          placeholder="Search prompts..."
+          value={searchQuery}
+          onChange={(e) => handleSearch(e.target.value)}
+          onFocus={handleFocus}
+          className="pl-9 pr-12 h-9"
+          aria-label="Search prompts"
+          aria-expanded={showDropdown}
+          aria-haspopup="listbox"
+        />
+        <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
           <span className="text-xs">⌘</span>K
         </kbd>
-      </Button>
+      </div>
 
-      {/* Search Dialog */}
-      <CommandDialog open={isSearchOpen} onOpenChange={setSearchOpen}>
-        <CommandInput
-          placeholder="Search prompts by title, content..."
-          value={searchQuery}
-          onValueChange={handleSearch}
-          ref={inputRef}
-        />
-        <CommandList>
-          <CommandEmpty>No prompts found.</CommandEmpty>
-
+      {/* Dropdown Results */}
+      {showDropdown && (
+        <div className="absolute top-full left-0 right-0 mt-1 bg-popover border rounded-md shadow-lg z-50 max-h-[400px] overflow-y-auto">
           {/* Search Results */}
           {searchResults.length > 0 && (
-            <CommandGroup heading="Results">
+            <div className="p-2">
+              <p className="px-2 py-1.5 text-xs font-medium text-muted-foreground">Results</p>
               {searchResults.map((prompt) => {
                 const category = prompt.categoryId
                   ? getCategoryById(prompt.categoryId)
                   : null;
 
                 return (
-                  <CommandItem
+                  <button
                     key={prompt.id}
-                    value={prompt.id}
-                    onSelect={() => handleSelectPrompt(prompt.id)}
+                    onClick={() => handleSelectPrompt(prompt.id)}
+                    className="w-full flex items-center gap-2 px-2 py-2 text-left rounded-sm hover:bg-accent transition-colors"
                   >
-                    <FileText className="mr-2 h-4 w-4" />
-                    <div className="flex flex-1 flex-col">
-                      <span className="font-medium">{prompt.title}</span>
-                      <span className="text-xs text-muted-foreground line-clamp-1">
-                        {prompt.content.slice(0, 100)}...
-                      </span>
+                    <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{prompt.title}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {prompt.content.slice(0, 80)}...
+                      </p>
                     </div>
                     {category && (
                       <Badge
                         variant="outline"
-                        className="ml-2"
-                        style={{
-                          borderColor: category.color || undefined,
-                        }}
+                        className="shrink-0"
+                        style={{ borderColor: category.color || undefined }}
                       >
                         {category.name}
                       </Badge>
                     )}
-                  </CommandItem>
+                  </button>
                 );
               })}
-            </CommandGroup>
+            </div>
+          )}
+
+          {/* No Results */}
+          {searchQuery.length > 0 && searchResults.length === 0 && (
+            <div className="p-4 text-center text-sm text-muted-foreground">
+              No prompts found for "{searchQuery}"
+            </div>
           )}
 
           {/* Recent Searches */}
           {searchQuery === '' && recentSearches.length > 0 && (
-            <>
-              <CommandSeparator />
-              <CommandGroup heading="Recent Searches">
-                {recentSearches.map((query, index) => (
-                  <CommandItem
-                    key={index}
-                    value={`recent-${query}`}
-                    onSelect={() => handleSelectRecent(query)}
-                  >
-                    <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
-                    <span>{query}</span>
-                  </CommandItem>
-                ))}
-                <CommandItem
-                  onSelect={clearRecentSearches}
-                  className="text-muted-foreground"
+            <div className="p-2 border-t">
+              <div className="flex items-center justify-between px-2 py-1.5">
+                <p className="text-xs font-medium text-muted-foreground">Recent Searches</p>
+                <button
+                  onClick={clearRecentSearches}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  <X className="mr-2 h-4 w-4" />
-                  Clear recent searches
-                </CommandItem>
-              </CommandGroup>
-            </>
+                  Clear
+                </button>
+              </div>
+              {recentSearches.map((query, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleSelectRecent(query)}
+                  className="w-full flex items-center gap-2 px-2 py-2 text-left rounded-sm hover:bg-accent transition-colors"
+                >
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm">{query}</span>
+                </button>
+              ))}
+            </div>
           )}
 
-          {/* Quick Actions */}
-          <CommandSeparator />
-          <CommandGroup heading="Quick Actions">
-            <CommandItem
-              onSelect={() => {
-                setSearchOpen(false);
-                router.push('/prompts/new');
-              }}
-            >
-              <FileText className="mr-2 h-4 w-4" />
-              Create new prompt
-              <kbd className="ml-auto pointer-events-none h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium hidden sm:flex">
-                <span className="text-xs">⌘</span>N
-              </kbd>
-            </CommandItem>
-          </CommandGroup>
-        </CommandList>
-      </CommandDialog>
-    </>
+          {/* Empty State - Show hint */}
+          {searchQuery === '' && recentSearches.length === 0 && (
+            <div className="p-4 text-center text-sm text-muted-foreground">
+              Type to search prompts...
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

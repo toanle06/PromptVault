@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   Sidebar,
   SidebarContent,
@@ -36,7 +37,6 @@ import {
   Tags,
   Star,
   Settings,
-  Sparkles,
   ChevronRight,
   ChevronDown,
   Trash2,
@@ -109,7 +109,13 @@ export function AppSidebar() {
     <Sidebar aria-label="Main navigation sidebar">
       <SidebarHeader className="border-b px-4 py-3">
         <div className="flex items-center gap-2">
-          <Sparkles className="h-6 w-6 text-primary" aria-hidden="true" />
+          <Image
+            src="/logo.png"
+            alt="PromptVault Logo"
+            width={28}
+            height={28}
+            className="rounded"
+          />
           <span className="text-lg font-bold">PromptVault</span>
         </div>
       </SidebarHeader>

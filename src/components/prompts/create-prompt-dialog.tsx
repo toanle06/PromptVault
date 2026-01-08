@@ -32,18 +32,20 @@ export function CreatePromptDialog() {
 
   return (
     <Dialog open={createPromptOpen} onOpenChange={setCreatePromptOpen}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Create New Prompt</DialogTitle>
           <DialogDescription>
             Add a new prompt to your library. Use {'{{variable_name}}'} syntax for dynamic variables.
           </DialogDescription>
         </DialogHeader>
+        <div className="flex-1 overflow-y-auto px-1 -mx-1">
         <PromptForm
           onSubmit={handleSubmit}
           onCancel={handleCancel}
           isSubmitting={isLoading}
         />
+        </div>
       </DialogContent>
     </Dialog>
   );

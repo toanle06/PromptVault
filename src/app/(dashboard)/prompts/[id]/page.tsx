@@ -19,7 +19,6 @@ import {
 import { PromptForm } from '@/components/prompts/prompt-form';
 import { usePrompts } from '@/hooks/use-prompts';
 import { useCategories } from '@/hooks/use-categories';
-import { useExpertRoles } from '@/hooks/use-expert-roles';
 import { useTags } from '@/hooks/use-tags';
 import type { PromptFormData } from '@/types';
 import {
@@ -57,7 +56,6 @@ export default function PromptDetailPage() {
 
   const { prompts, updatePrompt, copyPrompt, toggleFavorite, togglePin, duplicatePrompt, softDeletePrompt, isLoading } = usePrompts();
   const { getCategoryById } = useCategories();
-  const { getExpertRoleById } = useExpertRoles();
   const { getTagById } = useTags();
   const { attachments } = useAttachments(promptId);
 
@@ -71,8 +69,6 @@ export default function PromptDetailPage() {
 
   const prompt = prompts.find((p) => p.id === promptId);
   const category = prompt?.categoryId ? getCategoryById(prompt.categoryId) : null;
-  const subcategory = prompt?.subcategoryId ? getCategoryById(prompt.subcategoryId) : null;
-  const expertRole = prompt?.expertRoleId ? getExpertRoleById(prompt.expertRoleId) : null;
   const isTemplate = prompt ? hasVariables(prompt.content) : false;
 
   useEffect(() => {
@@ -212,26 +208,18 @@ export default function PromptDetailPage() {
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 space-y-2">
               <CardTitle className="text-2xl">{prompt.title}</CardTitle>
-              <div className="flex flex-wrap gap-2">
-                {category && (
-                  <Badge
-                    variant="secondary"
-                    style={{
-                      backgroundColor: category.color ? `${category.color}20` : undefined,
-                      color: category.color || undefined,
-                      borderColor: category.color || undefined,
-                    }}
-                  >
-                    {category.name}
-                    {subcategory && ` / ${subcategory.name}`}
-                  </Badge>
-                )}
-                {expertRole && (
-                  <Badge variant="outline">
-                    {expertRole.name}
-                  </Badge>
-                )}
-              </div>
+              {category && (
+                <Badge
+                  variant="secondary"
+                  style={{
+                    backgroundColor: category.color ? `${category.color}20` : undefined,
+                    color: category.color || undefined,
+                    borderColor: category.color || undefined,
+                  }}
+                >
+                  {category.name}
+                </Badge>
+              )}
             </div>
 
             <div className="flex items-center gap-2">

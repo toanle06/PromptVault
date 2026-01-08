@@ -27,7 +27,6 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { useCategories } from '@/hooks/use-categories';
 import { useTags } from '@/hooks/use-tags';
-import { useExpertRoles } from '@/hooks/use-expert-roles';
 import type { Prompt, PromptFormData, AIModel, PromptVariable } from '@/types';
 import { AI_MODELS } from '@/types';
 import { X, Loader2, Bot, ImageIcon } from 'lucide-react';
@@ -49,8 +48,6 @@ const formSchema = z.object({
   content: z.string().min(1, 'Content is required'),
   description: z.string().optional(),
   categoryId: z.string().optional(),
-  subcategoryId: z.string().optional(),
-  expertRoleId: z.string().optional(),
   tags: z.array(z.string()),
   isFavorite: z.boolean(),
   compatibleModels: z.array(z.string()).optional(),
@@ -67,9 +64,8 @@ interface PromptFormProps {
 }
 
 export function PromptForm({ prompt, onSubmit, onCancel, isSubmitting }: PromptFormProps) {
-  const { categories, categoriesTree } = useCategories();
+  const { categories } = useCategories();
   const { tags } = useTags();
-  const { expertRoles } = useExpertRoles();
 
   // Attachments - only available when editing existing prompt
   const {
@@ -87,8 +83,6 @@ export function PromptForm({ prompt, onSubmit, onCancel, isSubmitting }: PromptF
       content: prompt?.content || '',
       description: prompt?.description || '',
       categoryId: prompt?.categoryId || '',
-      subcategoryId: prompt?.subcategoryId || '',
-      expertRoleId: prompt?.expertRoleId || '',
       tags: prompt?.tags || [],
       isFavorite: prompt?.isFavorite || false,
       compatibleModels: prompt?.compatibleModels || [],
@@ -96,7 +90,6 @@ export function PromptForm({ prompt, onSubmit, onCancel, isSubmitting }: PromptF
     },
   });
 
-  const selectedCategoryId = form.watch('categoryId');
   const selectedTags = form.watch('tags');
   const selectedModels = form.watch('compatibleModels') || [];
   const content = form.watch('content');
@@ -105,11 +98,6 @@ export function PromptForm({ prompt, onSubmit, onCancel, isSubmitting }: PromptF
   const handleVariablesChange = (newVariables: PromptVariable[]) => {
     form.setValue('variables', newVariables);
   };
-
-  // Get subcategories for selected category
-  const subcategories = selectedCategoryId
-    ? categoriesTree.subs[selectedCategoryId] || []
-    : [];
 
   const handleSubmit = async (values: FormValues) => {
     await onSubmit(values as PromptFormData);
@@ -205,97 +193,33 @@ export function PromptForm({ prompt, onSubmit, onCancel, isSubmitting }: PromptF
           )}
         />
 
-        <div className="grid gap-4 md:grid-cols-2">
-          {/* Category */}
-          <FormField
-            control={form.control}
-            name="categoryId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Category</FormLabel>
-                <Select
-                  onValueChange={(value) => field.onChange(value === '__none__' ? '' : value)}
-                  value={field.value || '__none__'}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="__none__">None</SelectItem>
-                    {categoriesTree.main.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="h-3 w-3 rounded-full"
-                            style={{ backgroundColor: category.color || '#6366f1' }}
-                          />
-                          {category.name}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {/* Subcategory */}
-          <FormField
-            control={form.control}
-            name="subcategoryId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Subcategory</FormLabel>
-                <Select
-                  onValueChange={(value) => field.onChange(value === '__none__' ? '' : value)}
-                  value={field.value || '__none__'}
-                  disabled={!selectedCategoryId || subcategories.length === 0}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select subcategory" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="__none__">None</SelectItem>
-                    {subcategories.map((sub) => (
-                      <SelectItem key={sub.id} value={sub.id}>
-                        {sub.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        {/* Expert Role */}
+        {/* Category */}
         <FormField
           control={form.control}
-          name="expertRoleId"
+          name="categoryId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Expert Role</FormLabel>
+              <FormLabel>Category</FormLabel>
               <Select
                 onValueChange={(value) => field.onChange(value === '__none__' ? '' : value)}
                 value={field.value || '__none__'}
               >
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select expert role" />
+                    <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
                   <SelectItem value="__none__">None</SelectItem>
-                  {expertRoles.map((role) => (
-                    <SelectItem key={role.id} value={role.id}>
-                      {role.name}
-                      {role.experience && ` (${role.experience})`}
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="h-3 w-3 rounded-full"
+                          style={{ backgroundColor: category.color || '#6366f1' }}
+                        />
+                        {category.name}
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
